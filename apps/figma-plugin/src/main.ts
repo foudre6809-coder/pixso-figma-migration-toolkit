@@ -1,6 +1,6 @@
 import { createLayoutPlan } from "@pixso-figma-migration/layout-engine";
 import { type MigrationNode, validateMigrationMap } from "@pixso-figma-migration/migration-schema";
-import { type MatchCandidate, matchNodes } from "@pixso-figma-migration/node-matcher";
+import { assessRecoveryCompatibility, type MatchCandidate, matchNodes } from "@pixso-figma-migration/node-matcher";
 
 declare const __html__: string;
 
@@ -22,16 +22,20 @@ function readPluginMigrationId(node: BaseNode): string | undefined {
   return undefined;
 }
 
-function absoluteRect(node: SceneNode) {
-  const box = "absoluteBoundingBox" in node ? node.absoluteBoundingBox : undefined;
-  if (!box) return undefined;
-  return { x: box.x, y: box.y, width: box.width, height: box.height };
+function localRect(node: SceneNode) {
+  if (!("x" in node) || !("y" in node) || !("width" in node) || !("height" in node)) return undefined;
+  return { x: node.x, y: node.y, width: node.width, height: node.height };
 }
 
 function typeOf(node: SceneNode): string {
   if (node.type === "COMPONENT_SET") return "COMPONENT";
-  if (node.type === "RECTANGLE" && "fills" in node) return "IMAGE";
+  if (node.type === "RECTANGLE" && hasImageFill(node)) return "IMAGE";
   return node.type;
+}
+
+function hasImageFill(node: SceneNode): boolean {
+  if (!("fills" in node) || !Array.isArray(node.fills)) return false;
+  return node.fills.some((fill) => fill.type === "IMAGE");
 }
 
 function collectCandidates(root: BaseNode & ChildrenMixin, parentPath: string[] = []): MatchCandidate[] {
@@ -44,7 +48,7 @@ function collectCandidates(root: BaseNode & ChildrenMixin, parentPath: string[] 
       name: child.name,
       type: typeOf(scene),
       path,
-      rect: absoluteRect(scene),
+      rect: localRect(scene),
       migrationId: readPluginMigrationId(child)
     };
     const nested = "children" in child ? collectCandidates(child as BaseNode & ChildrenMixin, path) : [];
@@ -69,19 +73,35 @@ function applyOperation(node: FrameNode | ComponentNode | InstanceNode, property
 
 function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
   const plan = createLayoutPlan(source);
-  if (!canAutoLayout(figmaNode)) {
+  const compatibilityIssues = assessRecoveryCompatibility(source, {
+    type: typeOf(figmaNode),
+    rect: localRect(figmaNode),
+    textCharacters: figmaNode.type === "TEXT" ? figmaNode.characters : undefined,
+    mainComponentName: figmaNode.type === "INSTANCE" ? figmaNode.mainComponent?.name : undefined,
+    hasImageFill: hasImageFill(figmaNode)
+  });
+  const blockingIssue = compatibilityIssues.some((issue) => issue.severity === "error");
+  if (blockingIssue) {
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
       status: "failed",
       figmaNodeId: figmaNode.id,
-      messages: [`Matched node type ${figmaNode.type} cannot receive auto layout.`]
+      messages: compatibilityIssues.map((issue) => issue.message)
+    };
+  }
+  if (!canAutoLayout(figmaNode)) {
+    return {
+      migrationId: source.migrationId,
+      nodeName: source.name,
+      status: compatibilityIssues.length ? "partial" : "restored",
+      figmaNodeId: figmaNode.id,
+      messages: compatibilityIssues.map((issue) => issue.message)
     };
   }
 
   for (const operation of plan.operations) applyOperation(figmaNode, operation.property, operation.value);
-  if (source.type === "COMPONENT" && figmaNode.type !== "COMPONENT") plan.warnings.push("Component source matched non-component node.");
-  if (source.type === "INSTANCE") plan.warnings.push("Instance rebinding is not applied automatically in MVP.");
+  plan.warnings.push(...compatibilityIssues.map((issue) => issue.message));
 
   return {
     migrationId: source.migrationId,

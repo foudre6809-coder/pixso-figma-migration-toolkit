@@ -81,6 +81,13 @@ export const MigrationMapSchema = z.object({
     fileName: z.string().optional()
   }),
   exportScope: z.enum(["selection", "page", "artboard"]),
+  batch: z
+    .object({
+      index: z.number().int().positive(),
+      total: z.number().int().positive(),
+      rootCount: z.number().int().nonnegative()
+    })
+    .optional(),
   nodes: z.array(MigrationNodeSchema),
   warnings: z.array(z.string()).default([])
 });

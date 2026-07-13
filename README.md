@@ -1,6 +1,6 @@
 # Pixso Figma Migration Toolkit
 
-First-round MVP for migrating a Pixso private-deployment design system into Figma Desktop by pairing a Sketch export with `migration-map.json`.
+MVP for migrating a Pixso private-deployment design system into Figma Desktop by pairing a Sketch export with `migration-map.json`.
 
 The project does not assume that private Pixso exposes the same plugin API as public Pixso. The Pixso plugin starts with a capability probe and marks every exported field as `native`, `inferred`, or `unavailable`.
 
@@ -30,6 +30,8 @@ apps/pixso-plugin/manifest.json
 
 Run the capability probe first on representative selected nodes. Export the generated report before relying on full migration export.
 
+The export UI supports current selection, selected artboards, or the current page. Large exports can be split by root-node count; numbered `migration-map-XX-of-YY.json` files are repaired one at a time in Figma. Current-page export is available only when the private Pixso deployment exposes `currentPage.children`.
+
 ## Figma Plugin
 
 In Figma Desktop:
@@ -37,7 +39,7 @@ In Figma Desktop:
 1. Open `Plugins > Development > Import plugin from manifest...`.
 2. Choose `apps/figma-plugin/manifest.json`.
 3. Import the Sketch file.
-4. Run the plugin and paste or load `migration-map.json`.
+4. Run the plugin and choose or paste `migration-map.json`.
 5. Review restored, partial, and failed items before touching the full file.
 
 ## Verification
@@ -49,8 +51,9 @@ pnpm test
 pnpm build
 ```
 
-## First-Round Limits
+## Current Limits
 
 - Pixso API access must be verified locally with the capability probe.
 - Component instance restoration is conservative. The plugin reports uncertain matches instead of binding incorrectly.
+- Cancellation takes effect between root-node batches, not midway through one large artboard.
 - Variants, variables, constraints, and prototypes are scanned as future work, not fully restored in this MVP.

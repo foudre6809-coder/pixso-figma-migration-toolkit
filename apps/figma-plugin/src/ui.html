@@ -3,6 +3,7 @@
   <body>
     <main>
       <h1>Pixso Migration Repair</h1>
+      <label>Migration map <input id="file" type="file" accept=".json,application/json"></label>
       <textarea id="json" placeholder="Paste migration-map.json here"></textarea>
       <button id="repair">Repair selected scope</button>
       <section id="summary"></section>
@@ -18,6 +19,10 @@
       .failed { color: #c92a2a; }
     </style>
     <script>
+      document.getElementById("file").onchange = async (event) => {
+        const file = event.target.files?.[0];
+        if (file) document.getElementById("json").value = await file.text();
+      };
       document.getElementById("repair").onclick = () => {
         parent.postMessage({ pluginMessage: { type: "repair", json: document.getElementById("json").value } }, "*");
       };
@@ -31,12 +36,17 @@
           }, {});
           document.getElementById("summary").textContent =
             `Restored ${counts.restored || 0}, partial ${counts.partial || 0}, failed ${counts.failed || 0}`;
-          document.getElementById("results").innerHTML = message.results
-            .map((item) => `<li class="${item.status}"><button data-node="${item.figmaNodeId || ""}">select</button> ${item.status}: ${item.nodeName} ${item.messages.join("; ")}</li>`)
-            .join("");
-          document.querySelectorAll("[data-node]").forEach((button) => {
-            button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: button.dataset.node } }, "*");
-          });
+          const list = document.getElementById("results");
+          list.replaceChildren(...message.results.map((item) => {
+            const row = document.createElement("li");
+            row.className = item.status;
+            const button = document.createElement("button");
+            button.textContent = "select";
+            button.disabled = !item.figmaNodeId;
+            button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: item.figmaNodeId } }, "*");
+            row.append(button, document.createTextNode(` ${item.status}: ${item.nodeName} ${item.messages.join("; ")}`));
+            return row;
+          }));
         }
       };
     </script>

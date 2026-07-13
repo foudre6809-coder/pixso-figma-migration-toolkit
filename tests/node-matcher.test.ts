@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { native, unavailable, type MigrationNode } from "../packages/migration-schema/src";
-import { matchNodes } from "../packages/node-matcher/src";
+import { assessRecoveryCompatibility, matchNodes } from "../packages/node-matcher/src";
 import { createLayoutPlan } from "../packages/layout-engine/src";
 
 function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
@@ -77,6 +77,20 @@ describe("node matcher", () => {
 
     expect(result.status).toBe("ambiguous");
   });
+
+  it("matches indexed Pixso paths to Sketch-imported Figma paths", () => {
+    const [result] = matchNodes([node()], [
+      {
+        id: "figma-node",
+        name: "Button/Primary",
+        type: "COMPONENT",
+        path: ["Design System", "Button/Primary"],
+        rect: { x: 10, y: 20, width: 120, height: 40 }
+      }
+    ]);
+
+    expect(result.status).toBe("matched");
+  });
 });
 
 describe("layout engine", () => {
@@ -87,5 +101,34 @@ describe("layout engine", () => {
     expect(plan.operations).toContainEqual({ property: "layoutMode", value: "HORIZONTAL" });
     expect(plan.operations).toContainEqual({ property: "paddingRight", value: 16 });
     expect(plan.operations).toContainEqual({ property: "itemSpacing", value: 8 });
+  });
+});
+
+describe("recovery diagnostics", () => {
+  it("blocks unsafe component conversion", () => {
+    const issues = assessRecoveryCompatibility(node(), { type: "FRAME" });
+
+    expect(issues).toContainEqual(expect.objectContaining({ code: "component-type-mismatch", severity: "error" }));
+  });
+
+  it("reports an instance whose main component cannot be verified", () => {
+    const source = node({
+      type: "INSTANCE",
+      component: { componentKey: unavailable(), mainComponentId: unavailable(), instanceOf: native("Button/Primary") }
+    });
+    const issues = assessRecoveryCompatibility(source, { type: "INSTANCE", mainComponentName: "Button/Secondary" });
+
+    expect(issues).toContainEqual(expect.objectContaining({ code: "instance-rebind-required", severity: "warning" }));
+  });
+
+  it("reports text and size differences", () => {
+    const source = node({ type: "TEXT", text: { characters: native("Save"), styleSummary: unavailable() } });
+    const issues = assessRecoveryCompatibility(source, {
+      type: "TEXT",
+      textCharacters: "Submit",
+      rect: { x: 10, y: 20, width: 80, height: 40 }
+    });
+
+    expect(issues.map((issue) => issue.code)).toEqual(expect.arrayContaining(["text-content-mismatch", "size-mismatch"]));
   });
 });

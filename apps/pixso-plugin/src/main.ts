@@ -12,6 +12,9 @@ declare const pixso: any;
 declare const __html__: string;
 
 type RawNode = Record<string, any>;
+type ExportScope = MigrationMap["exportScope"];
+
+let exportCancelled = false;
 
 const fieldsToProbe = [
   "id",
@@ -40,6 +43,22 @@ const fieldsToProbe = [
 
 function readSelection(): RawNode[] {
   return pixso?.currentPage?.selection ?? [];
+}
+
+function rootsForScope(scope: ExportScope): RawNode[] {
+  const selection = readSelection();
+  if (scope === "page") {
+    const children = pixso?.currentPage?.children;
+    if (!Array.isArray(children)) throw new Error("This Pixso deployment does not expose currentPage.children.");
+    return children;
+  }
+  if (scope === "artboard") {
+    const artboards = selection.filter((node) => Array.isArray(node.children));
+    if (!artboards.length) throw new Error("Select one or more artboards before exporting this scope.");
+    return artboards;
+  }
+  if (!selection.length) throw new Error("Select one or more nodes before exporting.");
+  return selection;
 }
 
 function typeOf(node: RawNode): MigrationNode["type"] {
@@ -164,8 +183,7 @@ function createCapabilityReport(nodes: RawNode[]): CapabilityReport {
   };
 }
 
-function createMigrationMap(scope: MigrationMap["exportScope"]): MigrationMap {
-  const selection = readSelection();
+function createMigrationMap(scope: ExportScope, roots: RawNode[], index: number, total: number): MigrationMap {
   return {
     schemaVersion,
     createdAt: new Date().toISOString(),
@@ -176,8 +194,9 @@ function createMigrationMap(scope: MigrationMap["exportScope"]): MigrationMap {
       fileName: pixso?.root?.name
     },
     exportScope: scope,
-    nodes: flatten(selection),
-    warnings: selection.length === 0 ? ["No selected nodes. Select one or more artboards before exporting."] : []
+    batch: { index, total, rootCount: roots.length },
+    nodes: flatten(roots),
+    warnings: []
   };
 }
 
@@ -185,9 +204,41 @@ function downloadJson(name: string, data: unknown): void {
   pixso?.ui?.postMessage?.({ type: "download-json", name, data });
 }
 
+function postStatus(message: Record<string, unknown>): void {
+  pixso?.ui?.postMessage?.(message);
+}
+
+async function exportBatches(scope: ExportScope, batchSize: number): Promise<void> {
+  exportCancelled = false;
+  const roots = rootsForScope(scope);
+  const safeBatchSize = Math.max(1, Math.min(50, Math.floor(batchSize) || 5));
+  const total = Math.ceil(roots.length / safeBatchSize);
+
+  for (let index = 0; index < total; index += 1) {
+    if (exportCancelled) {
+      postStatus({ type: "export-cancelled", completed: index, total });
+      return;
+    }
+    const batchRoots = roots.slice(index * safeBatchSize, (index + 1) * safeBatchSize);
+    const map = createMigrationMap(scope, batchRoots, index + 1, total);
+    const suffix = total > 1 ? `-${String(index + 1).padStart(2, "0")}-of-${String(total).padStart(2, "0")}` : "";
+    downloadJson(`migration-map${suffix}.json`, map);
+    postStatus({ type: "export-progress", completed: index + 1, total, nodeCount: map.nodes.length });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+  postStatus({ type: "export-complete", total });
+}
+
 pixso?.showUI?.(__html__, { width: 420, height: 520 });
 
-pixso.ui.onmessage = (message: { type: string; scope?: MigrationMap["exportScope"] }) => {
+pixso.ui.onmessage = async (message: { type: string; scope?: ExportScope; batchSize?: number }) => {
   if (message.type === "probe") downloadJson("capability-report.json", createCapabilityReport(readSelection()));
-  if (message.type === "export") downloadJson("migration-map.json", createMigrationMap(message.scope ?? "selection"));
+  if (message.type === "cancel") exportCancelled = true;
+  if (message.type === "export") {
+    try {
+      await exportBatches(message.scope ?? "selection", message.batchSize ?? 5);
+    } catch (error) {
+      postStatus({ type: "error", message: error instanceof Error ? error.message : String(error) });
+    }
+  }
 };

@@ -6,6 +6,8 @@
 - Migration data is validated with a versioned schema.
 - Figma-side layout planning supports layout mode, padding, gap, and hug sizing operations.
 - Node matching handles missing migration IDs and reports ambiguity.
+- Pixso export supports selected nodes, selected artboards, or the current page, split into root-node batches.
+- Figma repair reports unsafe component/instance matches, text differences, missing image fills, vector conversion, and size anomalies.
 
 ## Must Be Verified In User Pixso Deployment
 
@@ -15,9 +17,11 @@
 - Whether text styles, image fills, SVG/vector details, and plugin data are readable.
 - Whether `setPluginData` is permitted.
 
-## Known First-Round Limits
+## Known Limits
 
 - Private Pixso API differences may require adapter edits in `apps/pixso-plugin/src/main.ts`.
 - Sketch import may rename or regroup nodes, lowering match confidence.
 - Figma plugin does not automatically rebind uncertain component instances.
+- Page export requires the private deployment to expose `currentPage.children`; otherwise the plugin reports the capability gap.
+- Cancellation is checked between root-node batches. A single very large artboard still completes its current batch before stopping.
 - Variables, variants, constraints, and prototypes are not fully restored in V1.

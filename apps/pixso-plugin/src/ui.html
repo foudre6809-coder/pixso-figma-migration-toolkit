@@ -5,8 +5,24 @@
       <h1>Pixso Migration Toolkit</h1>
       <p>Run capability probe first, then export selected design-system nodes.</p>
       <button id="probe">Export capability report</button>
+      <label>Scope
+        <select id="scope">
+          <option value="selection">Current selection</option>
+          <option value="artboard">Selected artboards</option>
+          <option value="page">Current page</option>
+        </select>
+      </label>
+      <label>Root nodes per batch <input id="batch-size" type="number" min="1" max="50" value="5"></label>
       <button id="export">Export migration map</button>
+      <button id="cancel" disabled>Cancel</button>
+      <p id="status" aria-live="polite"></p>
     </main>
+    <style>
+      body { font: 12px system-ui, sans-serif; margin: 16px; }
+      main { display: grid; gap: 12px; }
+      label { display: grid; gap: 4px; }
+      button, select, input { min-height: 32px; }
+    </style>
     <script>
       function saveJson(name, data) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -17,11 +33,27 @@
         URL.revokeObjectURL(a.href);
       }
       document.getElementById("probe").onclick = () => parent.postMessage({ pluginMessage: { type: "probe" } }, "*");
-      document.getElementById("export").onclick = () =>
-        parent.postMessage({ pluginMessage: { type: "export", scope: "selection" } }, "*");
+      document.getElementById("export").onclick = () => {
+        document.getElementById("export").disabled = true;
+        document.getElementById("cancel").disabled = false;
+        parent.postMessage({ pluginMessage: {
+          type: "export",
+          scope: document.getElementById("scope").value,
+          batchSize: Number(document.getElementById("batch-size").value)
+        } }, "*");
+      };
+      document.getElementById("cancel").onclick = () =>
+        parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
       window.onmessage = (event) => {
         const message = event.data.pluginMessage;
         if (message?.type === "download-json") saveJson(message.name, message.data);
+        if (message?.type === "export-progress")
+          document.getElementById("status").textContent = `Exported batch ${message.completed}/${message.total} (${message.nodeCount} nodes)`;
+        if (message?.type === "error") document.getElementById("status").textContent = message.message;
+        if (["export-complete", "export-cancelled", "error"].includes(message?.type)) {
+          document.getElementById("export").disabled = false;
+          document.getElementById("cancel").disabled = true;
+        }
       };
     </script>
   </body>

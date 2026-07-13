@@ -17,6 +17,20 @@ export interface MatchResult {
   reasons: string[];
 }
 
+export interface RecoveryCandidate {
+  type: string;
+  rect?: Rect;
+  textCharacters?: string;
+  mainComponentName?: string;
+  hasImageFill?: boolean;
+}
+
+export interface RecoveryIssue {
+  code: string;
+  severity: "warning" | "error";
+  message: string;
+}
+
 function rectSimilarity(a?: Rect | null, b?: Rect): number {
   if (!a || !b) return 0;
   const sizeDelta = Math.abs(a.width - b.width) + Math.abs(a.height - b.height);
@@ -28,7 +42,9 @@ function pathSimilarity(a: string[], b: string[]): number {
   const length = Math.max(a.length, b.length, 1);
   let same = 0;
   for (let i = 0; i < Math.min(a.length, b.length); i += 1) {
-    if (a[i] === b[i]) same += 1;
+    const sourceSegment = a[i].replace(/\[\d+\]$/, "");
+    const candidateSegment = b[i].replace(/\[\d+\]$/, "");
+    if (sourceSegment === candidateSegment) same += 1;
   }
   return same / length;
 }
@@ -96,4 +112,40 @@ export function matchNodes(nodes: MigrationNode[], candidates: MatchCandidate[])
       reasons: best.reasons
     };
   });
+}
+
+export function assessRecoveryCompatibility(node: MigrationNode, candidate: RecoveryCandidate): RecoveryIssue[] {
+  const issues: RecoveryIssue[] = [];
+
+  if (node.type === "COMPONENT" && candidate.type !== "COMPONENT") {
+    issues.push({ code: "component-type-mismatch", severity: "error", message: "Component matched a non-component node; conversion was skipped." });
+  }
+  if (node.type === "INSTANCE") {
+    if (candidate.type !== "INSTANCE") {
+      issues.push({ code: "instance-type-mismatch", severity: "error", message: "Instance matched a non-instance node; rebinding was skipped." });
+    } else if (node.component.instanceOf.value && candidate.mainComponentName !== node.component.instanceOf.value) {
+      issues.push({ code: "instance-rebind-required", severity: "warning", message: "Instance main component could not be verified and was not rebound." });
+    }
+  }
+  if (node.type === "TEXT" && node.text.characters.value !== null && candidate.textCharacters !== node.text.characters.value) {
+    issues.push({ code: "text-content-mismatch", severity: "warning", message: "Text content differs from the Pixso export." });
+  }
+  if (node.type === "VECTOR" && candidate.type !== "VECTOR" && candidate.type !== "BOOLEAN") {
+    issues.push({ code: "vector-type-mismatch", severity: "warning", message: "Vector content may have been flattened or converted during Sketch import." });
+  }
+  if (node.type === "IMAGE" && !candidate.hasImageFill) {
+    issues.push({ code: "image-fill-missing", severity: "warning", message: "Expected image fill is missing." });
+  }
+
+  const sourceRect = node.rect.value;
+  if (sourceRect && candidate.rect) {
+    const widthDelta = Math.abs(sourceRect.width - candidate.rect.width);
+    const heightDelta = Math.abs(sourceRect.height - candidate.rect.height);
+    const tolerance = Math.max(2, Math.max(sourceRect.width, sourceRect.height) * 0.05);
+    if (widthDelta > tolerance || heightDelta > tolerance) {
+      issues.push({ code: "size-mismatch", severity: "warning", message: "Imported size differs by more than 5% or 2px." });
+    }
+  }
+
+  return issues;
 }

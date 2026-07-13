@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+  <body>
+    <main>
+      <h1>Pixso Migration Repair</h1>
+      <textarea id="json" placeholder="Paste migration-map.json here"></textarea>
+      <button id="repair">Repair selected scope</button>
+      <section id="summary"></section>
+      <ol id="results"></ol>
+    </main>
+    <style>
+      body { font: 12px system-ui, sans-serif; margin: 16px; }
+      textarea { width: 100%; height: 240px; box-sizing: border-box; }
+      button { margin: 12px 0; }
+      li { margin: 8px 0; }
+      .restored { color: #087f5b; }
+      .partial { color: #b7791f; }
+      .failed { color: #c92a2a; }
+    </style>
+    <script>
+      document.getElementById("repair").onclick = () => {
+        parent.postMessage({ pluginMessage: { type: "repair", json: document.getElementById("json").value } }, "*");
+      };
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (message?.type === "error") document.getElementById("summary").textContent = message.message;
+        if (message?.type === "results") {
+          const counts = message.results.reduce((acc, item) => {
+            acc[item.status] = (acc[item.status] || 0) + 1;
+            return acc;
+          }, {});
+          document.getElementById("summary").textContent =
+            `Restored ${counts.restored || 0}, partial ${counts.partial || 0}, failed ${counts.failed || 0}`;
+          document.getElementById("results").innerHTML = message.results
+            .map((item) => `<li class="${item.status}"><button data-node="${item.figmaNodeId || ""}">select</button> ${item.status}: ${item.nodeName} ${item.messages.join("; ")}</li>`)
+            .join("");
+          document.querySelectorAll("[data-node]").forEach((button) => {
+            button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: button.dataset.node } }, "*");
+          });
+        }
+      };
+    </script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "0.1.0",
+  "createdAt": "2026-07-13T00:00:00.000Z",
+  "sourceTool": "pixso",
+  "checkedNodeCount": 3,
+  "availableFields": ["children", "height", "id", "layoutMode", "name", "type", "width", "x", "y"],
+  "unavailableFields": ["componentKey", "fills", "itemSpacing", "mainComponent", "paddingBottom", "paddingLeft", "paddingRight", "paddingTop"],
+  "notes": ["Example only. Run the probe inside the target Pixso private deployment."]
+}

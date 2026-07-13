@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "0.1.0",
+  "createdAt": "2026-07-13T00:00:00.000Z",
+  "sourceTool": "pixso",
+  "sourceEnvironment": {
+    "deployment": "private",
+    "pluginApiVersion": "unknown",
+    "fileName": "Design System"
+  },
+  "exportScope": "selection",
+  "nodes": [
+    {
+      "migrationId": "pxm_button_primary",
+      "originalId": "1:2",
+      "name": "Button/Primary",
+      "type": "COMPONENT",
+      "path": ["Design System[0]", "Button/Primary[0]"],
+      "childMigrationIds": [],
+      "rect": { "value": { "x": 10, "y": 20, "width": 120, "height": 40 }, "source": "native" },
+      "visible": { "value": true, "source": "native" },
+      "layout": {
+        "mode": { "value": "HORIZONTAL", "source": "native" },
+        "paddingTop": { "value": 8, "source": "native" },
+        "paddingRight": { "value": 16, "source": "native" },
+        "paddingBottom": { "value": 8, "source": "native" },
+        "paddingLeft": { "value": 16, "source": "native" },
+        "gap": { "value": 8, "source": "native" },
+        "widthMode": { "value": "HUG", "source": "native" },
+        "heightMode": { "value": "HUG", "source": "native" }
+      },
+      "component": {
+        "componentKey": { "value": "button-primary", "source": "native" },
+        "mainComponentId": { "value": null, "source": "unavailable" },
+        "instanceOf": { "value": null, "source": "unavailable" }
+      },
+      "text": {
+        "characters": { "value": null, "source": "unavailable" },
+        "styleSummary": { "value": null, "source": "unavailable" }
+      },
+      "asset": {
+        "svgSummary": { "value": null, "source": "unavailable" },
+        "imageFillSummary": { "value": null, "source": "unavailable" }
+      },
+      "riskFlags": []
+    }
+  ],
+  "warnings": []
+}

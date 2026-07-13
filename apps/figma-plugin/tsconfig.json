@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["@figma/plugin-typings"]
+  },
+  "references": [
+    { "path": "../../packages/migration-schema" },
+    { "path": "../../packages/node-matcher" },
+    { "path": "../../packages/layout-engine" }
+  ],
+  "include": ["src/**/*.ts"]
+}

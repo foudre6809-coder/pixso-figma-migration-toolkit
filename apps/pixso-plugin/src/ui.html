@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <body>
+    <main>
+      <h1>Pixso Migration Toolkit</h1>
+      <p>Run capability probe first, then export selected design-system nodes.</p>
+      <button id="probe">Export capability report</button>
+      <button id="export">Export migration map</button>
+    </main>
+    <script>
+      function saveJson(name, data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      document.getElementById("probe").onclick = () => parent.postMessage({ pluginMessage: { type: "probe" } }, "*");
+      document.getElementById("export").onclick = () =>
+        parent.postMessage({ pluginMessage: { type: "export", scope: "selection" } }, "*");
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (message?.type === "download-json") saveJson(message.name, message.data);
+      };
+    </script>
+  </body>
+</html>

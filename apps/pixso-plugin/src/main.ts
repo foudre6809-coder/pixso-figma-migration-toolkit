@@ -41,6 +41,18 @@ const fieldsToProbe = [
   "isMask"
 ];
 
+const fieldsToSample = new Set([
+  "type",
+  "layoutMode",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "itemSpacing",
+  "layoutSizingHorizontal",
+  "layoutSizingVertical"
+]);
+
 function readSelection(): RawNode[] {
   return pixso?.currentPage?.selection ?? [];
 }
@@ -164,13 +176,55 @@ function flatten(nodes: RawNode[], parentPath: string[] = [], parentMigrationId?
   });
 }
 
-function createCapabilityReport(nodes: RawNode[]): CapabilityReport {
+function flattenRawNodes(nodes: RawNode[]): RawNode[] {
+  return nodes.flatMap((node) => [node, ...(Array.isArray(node.children) ? flattenRawNodes(node.children) : [])]);
+}
+
+function inspectField(node: RawNode, field: string): { available: boolean; value?: unknown } {
+  try {
+    const value = node[field];
+    return { available: field in node && value !== undefined, value };
+  } catch {
+    return { available: false };
+  }
+}
+
+function safeSample(value: unknown): string | number | boolean | null | undefined {
+  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  return undefined;
+}
+
+function createCapabilityReport(roots: RawNode[]): CapabilityReport {
+  const nodes = flattenRawNodes(roots);
   const available = new Set<string>();
   const unavailableFields = new Set<string>();
+  const nodeTypeCounts: Record<string, number> = {};
+  const fieldCoverage = fieldsToProbe.map((field) => ({
+    field,
+    availableCount: 0,
+    unavailableCount: 0,
+    sampleValues: [] as Array<string | number | boolean | null>
+  }));
+
   for (const node of nodes) {
-    for (const field of fieldsToProbe) {
-      if (field in node && node[field] !== undefined) available.add(field);
-      else unavailableFields.add(field);
+    const rawType = String(node.type ?? "UNKNOWN");
+    nodeTypeCounts[rawType] = (nodeTypeCounts[rawType] ?? 0) + 1;
+
+    for (const coverage of fieldCoverage) {
+      const result = inspectField(node, coverage.field);
+      if (result.available) {
+        available.add(coverage.field);
+        coverage.availableCount += 1;
+        if (fieldsToSample.has(coverage.field)) {
+          const sample = safeSample(result.value);
+          if (sample !== undefined && !coverage.sampleValues.includes(sample) && coverage.sampleValues.length < 5) {
+            coverage.sampleValues.push(sample);
+          }
+        }
+      } else {
+        unavailableFields.add(coverage.field);
+        coverage.unavailableCount += 1;
+      }
     }
   }
   return {
@@ -178,9 +232,16 @@ function createCapabilityReport(nodes: RawNode[]): CapabilityReport {
     createdAt: new Date().toISOString(),
     sourceTool: "pixso",
     checkedNodeCount: nodes.length,
+    checkedRootCount: roots.length,
+    sourceEnvironment: {
+      pluginApiVersion: pixso?.apiVersion,
+      fileName: pixso?.root?.name
+    },
     availableFields: [...available].sort(),
     unavailableFields: [...unavailableFields].filter((field) => !available.has(field)).sort(),
-    notes: ["请在目标 Pixso 私有化环境中运行本检测，再使用迁移数据。"]
+    nodeTypeCounts,
+    fieldCoverage,
+    notes: ["本报告递归检查选中节点及其全部后代。字段值仅采样非敏感的布局与节点类型信息。"]
   };
 }
 

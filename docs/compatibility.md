@@ -10,6 +10,7 @@
 - Figma repair reports unsafe component/instance matches, text differences, missing image fills, vector conversion, and size anomalies.
 - Sketch-imported groups can match Pixso frames, and repeated names are disambiguated with indexed hierarchy paths.
 - Both plugin interfaces and user-facing diagnostics are displayed in Chinese.
+- Capability reports recursively inspect the selected subtree and include per-field coverage plus non-sensitive layout samples.
 
 ## Must Be Verified In User Pixso Deployment
 

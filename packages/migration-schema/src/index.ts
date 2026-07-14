@@ -98,8 +98,26 @@ export const CapabilityReportSchema = z.object({
   createdAt: z.string(),
   sourceTool: z.literal("pixso"),
   checkedNodeCount: z.number(),
+  checkedRootCount: z.number().int().nonnegative().optional(),
+  sourceEnvironment: z
+    .object({
+      pluginApiVersion: z.string().optional(),
+      fileName: z.string().optional()
+    })
+    .optional(),
   availableFields: z.array(z.string()),
   unavailableFields: z.array(z.string()),
+  nodeTypeCounts: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  fieldCoverage: z
+    .array(
+      z.object({
+        field: z.string(),
+        availableCount: z.number().int().nonnegative(),
+        unavailableCount: z.number().int().nonnegative(),
+        sampleValues: z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])).default([])
+      })
+    )
+    .default([]),
   notes: z.array(z.string()).default([])
 });
 export type CapabilityReport = z.infer<typeof CapabilityReportSchema>;
@@ -118,4 +136,8 @@ export function inferred<T>(value: T, note?: string): { value: T; source: FieldS
 
 export function validateMigrationMap(input: unknown): MigrationMap {
   return MigrationMapSchema.parse(input);
+}
+
+export function validateCapabilityReport(input: unknown): CapabilityReport {
+  return CapabilityReportSchema.parse(input);
 }

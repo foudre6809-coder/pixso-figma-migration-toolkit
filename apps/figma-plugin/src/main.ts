@@ -4,7 +4,7 @@ import { assessRecoveryCompatibility, type MatchCandidate, matchNodes } from "@p
 
 declare const __html__: string;
 
-type RepairStatus = "restored" | "partial" | "failed";
+type RepairStatus = "modified" | "verified" | "partial" | "failed";
 
 const matchStatusLabels = { matched: "已匹配但缺少目标节点", ambiguous: "存在歧义", unmatched: "未匹配" } as const;
 const reasonLabels: Record<string, string> = {
@@ -99,13 +99,22 @@ function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
       messages: compatibilityIssues.map((issue) => issue.message)
     };
   }
+  if (!plan.shouldApply) {
+    return {
+      migrationId: source.migrationId,
+      nodeName: source.name,
+      status: compatibilityIssues.length ? "partial" : "verified",
+      figmaNodeId: figmaNode.id,
+      messages: [...compatibilityIssues.map((issue) => issue.message), "节点已匹配，但迁移数据中没有可应用的布局属性，仅完成一致性检查。"]
+    };
+  }
   if (!canAutoLayout(figmaNode)) {
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
-      status: compatibilityIssues.length ? "partial" : "restored",
+      status: "failed",
       figmaNodeId: figmaNode.id,
-      messages: compatibilityIssues.map((issue) => issue.message)
+      messages: [...compatibilityIssues.map((issue) => issue.message), "目标节点不支持自动布局，未应用任何修改。"]
     };
   }
 
@@ -115,7 +124,7 @@ function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
   return {
     migrationId: source.migrationId,
     nodeName: source.name,
-    status: plan.warnings.length ? "partial" : "restored",
+    status: plan.warnings.length ? "partial" : "modified",
     figmaNodeId: figmaNode.id,
     messages: plan.warnings
   };

@@ -172,6 +172,46 @@ describe("layout engine", () => {
     expect(plan.operations).toContainEqual({ property: "paddingRight", value: 16 });
     expect(plan.operations).toContainEqual({ property: "itemSpacing", value: 8 });
   });
+
+  it("does not claim changes when auto layout data is unavailable", () => {
+    const plan = createLayoutPlan(
+      node({
+        layout: {
+          mode: unavailable(),
+          paddingTop: unavailable(),
+          paddingRight: unavailable(),
+          paddingBottom: unavailable(),
+          paddingLeft: unavailable(),
+          gap: unavailable(),
+          widthMode: unavailable(),
+          heightMode: unavailable()
+        }
+      })
+    );
+
+    expect(plan.shouldApply).toBe(false);
+    expect(plan.operations).toEqual([]);
+  });
+
+  it("applies a recoverable layout direction even when spacing is unavailable", () => {
+    const plan = createLayoutPlan(
+      node({
+        layout: {
+          mode: native("HORIZONTAL"),
+          paddingTop: unavailable(),
+          paddingRight: unavailable(),
+          paddingBottom: unavailable(),
+          paddingLeft: unavailable(),
+          gap: unavailable(),
+          widthMode: unavailable(),
+          heightMode: unavailable()
+        }
+      })
+    );
+
+    expect(plan.shouldApply).toBe(true);
+    expect(plan.operations).toEqual([{ property: "layoutMode", value: "HORIZONTAL" }]);
+  });
 });
 
 describe("recovery diagnostics", () => {

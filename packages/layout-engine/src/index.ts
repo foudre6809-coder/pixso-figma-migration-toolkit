@@ -49,7 +49,7 @@ export function createLayoutPlan(node: MigrationNode): LayoutPlan {
 
   return {
     migrationId: node.migrationId,
-    shouldApply: operations.length > 1,
+    shouldApply: operations.length > 0,
     operations,
     warnings
   };

@@ -24,6 +24,7 @@
 - The `InputNumber 数字输入框` sample contained 252 Pixso metadata nodes and 252 Sketch nodes.
 - Offline matching resolved all 252 nodes after frame/group compatibility and indexed hierarchy matching were added.
 - The sample exposed geometry for all nodes, but did not expose recoverable Auto Layout values; this remains a Pixso API capability limit rather than a matcher failure.
+- Figma results distinguish actual modifications from nodes that were only matched and verified, so zero-change runs are not reported as successful repairs.
 
 ## Known Limits
 

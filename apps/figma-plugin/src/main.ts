@@ -171,8 +171,8 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
       child.x = x;
       child.y = y;
     }
-    if (background && backgroundClassification === "promote") background.remove();
-    group.remove();
+    if (background && backgroundClassification === "promote" && !background.removed) background.remove();
+    if (!group.removed) group.remove();
     frame.locked = groupLocked;
   } catch (error) {
     if (!group.removed) {

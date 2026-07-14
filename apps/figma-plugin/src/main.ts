@@ -473,7 +473,11 @@ function repairNode(
 }
 
 function runFromJson(json: string, mode: RunMode): RepairItem[] {
-  const map = validateMigrationMap(JSON.parse(json));
+  const input = JSON.parse(json) as Record<string, unknown>;
+  if ("checkedNodeCount" in input && !("nodes" in input)) {
+    throw new Error("你选择的是 capability-report.json（能力检测报告）。请改选 Pixso 导出的 migration-map.json。");
+  }
+  const map = validateMigrationMap(input);
   const scopeRoot = figma.currentPage.selection.length
     ? ({ children: figma.currentPage.selection } as BaseNode & ChildrenMixin)
     : figma.currentPage;

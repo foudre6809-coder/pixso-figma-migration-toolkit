@@ -1,6 +1,8 @@
 import {
   type ImageFillSummary,
   type MigrationNode,
+  type StrokePaintSummary,
+  type EffectsSummary,
   native,
   unavailable
 } from "@pixso-figma-migration/migration-schema";
@@ -61,6 +63,82 @@ export function classifyPixsoNodeType(node: RawNode): MigrationNode["type"] {
 
 function uniqueStrings(values: unknown[]): string[] {
   return [...new Set(values.filter((value): value is string => typeof value === "string" && value.length > 0))];
+}
+
+function visiblePaints(paints: unknown): any[] {
+  return Array.isArray(paints) ? paints.filter((paint) => paint?.visible !== false) : [];
+}
+
+export function summarizeStrokes(
+  node: RawNode
+): NonNullable<MigrationNode["appearance"]["strokeSummary"]> {
+  if (!Array.isArray(node.strokes)) return unavailable("未开放描边 Paint 字段。");
+  const strokes = visiblePaints(node.strokes);
+  const styleId = [node.strokeStyleId, node.strokeStyle?.id].find((value) => typeof value === "string") ?? null;
+  const styleName = [node.strokeStyleName, node.strokeStyle?.name].find((value) => typeof value === "string") ?? null;
+  const paintTypes = uniqueStrings(strokes.map((paint) => paint?.type));
+  return native<StrokePaintSummary>({
+    count: strokes.length,
+    paintTypes,
+    opacities: strokes.map((paint) => (typeof paint.opacity === "number" ? paint.opacity : 1)),
+    styleId,
+    styleName,
+    isMixed: node.strokeWeight === "mixed",
+    hasGradient: paintTypes.some((type) => type.includes("GRADIENT")),
+    hasVariableReference: Boolean(
+      styleId || strokes.some((paint) => paint?.boundVariables || paint?.variableId || paint?.styleId)
+    ),
+    completeSingleSolid: strokes.length === 1 && strokes[0]?.type === "SOLID"
+  });
+}
+
+export function summarizeEffects(
+  effects: unknown
+): NonNullable<MigrationNode["appearance"]["effectsSummary"]> {
+  if (!Array.isArray(effects)) return unavailable("未开放效果字段。");
+  const visible = effects.filter((effect) => effect?.visible !== false);
+  return native<EffectsSummary>({
+    count: visible.length,
+    types: uniqueStrings(visible.map((effect) => effect?.type)),
+    complete: visible.every((effect) => typeof effect?.type === "string")
+  });
+}
+
+export interface AppearanceOwnerCandidate {
+  reason: "self" | "full-size-background" | "ambiguous" | "unavailable";
+  childIndex?: number;
+}
+
+function hasDirectPaint(node: RawNode): boolean {
+  return visiblePaints(node.fills).length > 0 || visiblePaints(node.strokes).length > 0;
+}
+
+function withinBackgroundTolerance(actual: number, expected: number): boolean {
+  return Math.abs(actual - expected) <= Math.max(1, Math.abs(expected) * 0.01);
+}
+
+export function findAppearanceOwnerCandidate(node: RawNode): AppearanceOwnerCandidate {
+  if (hasDirectPaint(node)) return { reason: "self" };
+  if (!Array.isArray(node.children)) return { reason: "unavailable" };
+  const candidates = node.children
+    .map((child: RawNode, index: number) => ({ child, index }))
+    .filter(({ child }: { child: RawNode }) => {
+      const type = String(child.type ?? "").toUpperCase();
+      return (
+        type === "RECTANGLE" &&
+        child.visible !== false &&
+        !child.isMask &&
+        !child.isBooleanOperation &&
+        withinBackgroundTolerance(Number(child.x), 0) &&
+        withinBackgroundTolerance(Number(child.y), 0) &&
+        withinBackgroundTolerance(Number(child.width), Number(node.width)) &&
+        withinBackgroundTolerance(Number(child.height), Number(node.height))
+      );
+    });
+  if (candidates.length === 1 && candidates[0]?.index === 0) {
+    return { reason: "full-size-background", childIndex: candidates[0].index };
+  }
+  return { reason: candidates.length > 0 ? "ambiguous" : "unavailable" };
 }
 
 export function summarizeImageFills(

@@ -35,12 +35,35 @@ export const ImageFillSummarySchema = z.object({
 });
 export type ImageFillSummary = z.infer<typeof ImageFillSummarySchema>;
 
+export const StrokePaintSummarySchema = z.object({
+  count: z.number().int().nonnegative(),
+  paintTypes: z.array(z.string()),
+  opacities: z.array(z.number().min(0).max(1)),
+  styleId: z.string().nullable(),
+  styleName: z.string().nullable(),
+  isMixed: z.boolean(),
+  hasGradient: z.boolean(),
+  hasVariableReference: z.boolean(),
+  completeSingleSolid: z.boolean()
+});
+export type StrokePaintSummary = z.infer<typeof StrokePaintSummarySchema>;
+
+export const EffectsSummarySchema = z.object({
+  count: z.number().int().nonnegative(),
+  types: z.array(z.string()),
+  complete: z.boolean()
+});
+export type EffectsSummary = z.infer<typeof EffectsSummarySchema>;
+
 const emptyAppearance = {
   fill: { value: null, source: "unavailable" as const },
   stroke: { value: null, source: "unavailable" as const },
   strokeWeight: { value: null, source: "unavailable" as const },
   strokeAlign: { value: null, source: "unavailable" as const },
-  cornerRadii: { value: null, source: "unavailable" as const }
+  cornerRadii: { value: null, source: "unavailable" as const },
+  opacity: { value: null, source: "unavailable" as const },
+  strokeSummary: { value: null, source: "unavailable" as const },
+  effectsSummary: { value: null, source: "unavailable" as const }
 };
 
 export const AppearanceSchema = z.object({
@@ -48,7 +71,10 @@ export const AppearanceSchema = z.object({
   stroke: sourced(SolidPaintSchema),
   strokeWeight: sourced(z.number().nonnegative()),
   strokeAlign: sourced(z.enum(["INSIDE", "CENTER", "OUTSIDE"])),
-  cornerRadii: sourced(z.tuple([z.number().nonnegative(), z.number().nonnegative(), z.number().nonnegative(), z.number().nonnegative()]))
+  cornerRadii: sourced(z.tuple([z.number().nonnegative(), z.number().nonnegative(), z.number().nonnegative(), z.number().nonnegative()])),
+  opacity: sourced(z.number().min(0).max(1)).optional(),
+  strokeSummary: sourced(StrokePaintSummarySchema).optional(),
+  effectsSummary: sourced(EffectsSummarySchema).optional()
 });
 
 export const NodeTypeSchema = z.enum([
@@ -75,6 +101,9 @@ export const MigrationNodeSchema = z.object({
   path: z.array(z.string()),
   parentMigrationId: z.string().optional(),
   childMigrationIds: z.array(z.string()).default([]),
+  appearanceOwnerMigrationId: z.string().optional(),
+  appearanceOwnerReason: z.enum(["self", "full-size-background", "ambiguous", "unavailable"]).optional(),
+  fullSizeBackgroundChildMigrationId: z.string().optional(),
   rect: sourced(RectSchema),
   visible: sourced(z.boolean()),
   layout: z.object({

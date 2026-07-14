@@ -7,7 +7,7 @@
 - `pnpm test`
 - `pnpm build`
 
-GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes retained-background position order, image/solid/mixed fill classification, sparse-selection page indices and fallback sources, preview status classification, split operation risk, partial execution status, safe static geometry restoration, overlap protection, safe Component eligibility, selection-required repair scopes, and null wrapper appearance preservation.
+GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes default-off geometry, diagnostic no-write policy, strict structure gates, image/solid/mixed fill classification, sparse-selection page indices, visual-owner detection, stroke completeness diagnostics, preview status classification, partial execution status, and selection-required repair scopes.
 
 ## Manual Pixso Checks
 
@@ -23,8 +23,8 @@ GitHub Actions repeats these checks after a frozen-lockfile install. Unit covera
 
 1. Import the matching Sketch file into Figma Desktop.
 2. Use a clean import that has not been repaired by an older plugin version, then select only the imported scope.
-3. Run **仅扫描预览** with the exported JSON and confirm no Figma node changes.
-4. Confirm preview separately reports **将修改 / 无需修改 / 需人工确认 / 无法处理**, then run **执行安全修复**.
+3. Run **诊断** and confirm no Figma node changes.
+4. Confirm preview separately reports **将修改 / 无需修改 / 需人工确认 / 无法处理**, then run the default **保守修复**.
 5. Click failed items and inspect whether the failure is due to API unavailability, Sketch rename/regroup, or unsupported structure.
 6. Confirm mismatched components are reported without conversion or instance rebinding.
 7. Run the same JSON a second time and confirm migration IDs prevent positional rematching failures.
@@ -35,10 +35,15 @@ GitHub Actions repeats these checks after a frozen-lockfile install. Unit covera
 12. Use a sample whose layout is high risk but appearance is safe; confirm layout is skipped, appearance is restored, and the result is partial.
 13. Use a high-risk layout sample with a uniquely matched source Component; confirm main Component rebuilding still runs and the result is partial.
 14. Force a later operation failure after one safe mutation; confirm `appliedChanges` is populated, status is partial, the failed step is named, and the message mentions Figma Undo.
-15. Verify root artboard dimensions and static child coordinates against Pixso while confirming text line height remains adaptive.
+15. Confirm conservative repair leaves root dimensions and every child `x/y` unchanged.
 16. Load a migration map larger than 3 MB and confirm the UI reports its file name and size without rendering the full JSON into the textarea.
 17. Launch a selection/artboard map without a Figma selection and confirm the plugin blocks the run; confirm a page map still permits a full-page scan.
 18. Use an Instance whose outer fill/stroke is null and whose nested Frame owns the input border; confirm repair does not clear the imported wrapper or nested input appearance.
+19. Confirm **结构修复** and **实验性几何恢复** are both off by default. Turn on structural repair and verify any count mismatch, match rate below 90%, Mask, unknown absolute positioning, overlap, or size mismatch blocks Auto Layout.
+
+## Visual Regression Baseline
+
+Use three separate clean Sketch imports: A without the plugin, B with the last visually better build, and C with this build's conservative repair. Record displaced-node count, mean position deviation, root size, correct input-border count, correct padding/gap count, extra-border count, and text-wrap anomalies. Do not reuse a file modified by another build.
 
 ## MVP Sample Set
 

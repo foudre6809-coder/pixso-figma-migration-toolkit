@@ -28,9 +28,12 @@ The matcher scores migration ID, name, type, hierarchy path, and geometry. Ambig
 
 - Pixso plugin is read-first and selected-scope by default.
 - Every field carries a source marker: `native`, `inferred`, or `unavailable`.
-- Figma plugin plans geometry, layout, appearance, and Component operations separately. A high-risk layout suppresses only layout operations.
+- The Figma plugin exposes three levels: diagnostic, conservative repair (default), and structural repair (experimental).
+- Conservative repair writes migration IDs and restores only complete single-solid appearance on a confirmed visual owner. It never changes geometry, node type, Auto Layout, or Component structure.
+- Structural repair is opt-in. Auto Layout and Group conversion require a unique high-confidence parent match, equal child counts, at least 90% child matching, consistent order, no mask/unknown absolute/overlap, and source/target sizes within 2px or 2%.
+- Geometry restoration is a second, separately disabled experimental switch. Geometry differences remain visible in diagnostics when writes are disabled.
 - Preview distinguishes planned changes from no-change matches. Apply results retain `appliedChanges`, so partial mutations and failed later steps remain auditable and undoable.
-- Static coordinate restoration requires a unique high-confidence match and a matched non-Auto-Layout parent. Root restoration changes size only, never the Figma canvas position.
+- Appearance restoration follows `appearanceOwnerMigrationId`. A full-size bottom Rectangle can own a container's appearance; ambiguous candidates are reported without promotion.
 - Component/instance restoration is conservative and reports uncertain cases.
 
 ## Reserved Roadmap Boundaries

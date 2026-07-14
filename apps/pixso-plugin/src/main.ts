@@ -12,10 +12,13 @@ import {
   type RootRef,
   classifyPixsoNodeType,
   createRootRefs,
+  findAppearanceOwnerCandidate,
   readLayoutPositioning,
   rootIndexWarnings,
   rootPath,
-  summarizeImageFills
+  summarizeEffects,
+  summarizeImageFills,
+  summarizeStrokes
 } from "./node-data";
 
 declare const pixso: any;
@@ -56,13 +59,18 @@ const fieldsToProbe = [
   "strokes",
   "strokeWeight",
   "strokeAlign",
+  "strokeStyleId",
+  "strokeStyleName",
+  "strokeStyle",
   "cornerRadius",
   "topLeftRadius",
   "topRightRadius",
   "bottomRightRadius",
   "bottomLeftRadius",
   "visible",
-  "isMask"
+  "isMask",
+  "opacity",
+  "effects"
 ];
 
 const fieldsToSample = new Set([
@@ -194,6 +202,10 @@ function toMigrationNode(
   const childIds = children.map((child: RawNode, index: number) =>
     createMigrationId(child, [...path, `${child.name ?? "unnamed"}[${index}]`])
   );
+  const appearanceOwner = findAppearanceOwnerCandidate(node);
+  const ownerChildId =
+    appearanceOwner.childIndex === undefined ? undefined : childIds[appearanceOwner.childIndex];
+  const strokeSummary = summarizeStrokes(node);
 
   return {
     migrationId,
@@ -205,6 +217,11 @@ function toMigrationNode(
     path,
     parentMigrationId,
     childMigrationIds: childIds,
+    appearanceOwnerMigrationId:
+      appearanceOwner.reason === "self" ? migrationId : appearanceOwner.reason === "full-size-background" ? ownerChildId : undefined,
+    appearanceOwnerReason: appearanceOwner.reason,
+    fullSizeBackgroundChildMigrationId:
+      appearanceOwner.reason === "full-size-background" ? ownerChildId : undefined,
     rect:
       typeof node.x === "number" && typeof node.y === "number" && typeof node.width === "number" && typeof node.height === "number"
         ? native({ x: node.x, y: node.y, width: node.width, height: node.height })
@@ -250,12 +267,20 @@ function toMigrationNode(
       stroke: normalizeSolidPaint(node.strokes, "描边"),
       strokeWeight: typeof node.strokeWeight === "number" ? native(node.strokeWeight) : unavailable("未开放描边粗细字段。"),
       strokeAlign: normalizeStrokeAlign(node.strokeAlign),
-      cornerRadii: normalizeCornerRadii(node)
+      cornerRadii: normalizeCornerRadii(node),
+      opacity: typeof node.opacity === "number" ? native(node.opacity) : unavailable("未开放透明度字段。"),
+      strokeSummary,
+      effectsSummary: summarizeEffects(node.effects)
     },
     riskFlags: [
       ...(node.isMask ? ["mask"] : []),
       ...(classifyPixsoNodeType(node) === "GROUP" ? ["group-may-import-as-frame-or-group"] : []),
       ...(readLayoutPositioning(node).source === "unavailable" ? ["absolute-layout-unconfirmed"] : []),
+      ...(appearanceOwner.reason === "ambiguous" ? ["appearance-owner-ambiguous"] : []),
+      ...(strokeSummary.source === "unavailable" ? ["stroke-data-unavailable"] : []),
+      ...(strokeSummary.value && strokeSummary.value.count > 0 && !strokeSummary.value.completeSingleSolid
+        ? ["stroke-paint-incomplete"]
+        : []),
       ...(!migrationIdPersisted ? ["migration-id-not-persisted"] : [])
     ]
   };

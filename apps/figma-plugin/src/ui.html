@@ -10,6 +10,13 @@
       <label>迁移数据文件 <input id="file" type="file" accept=".json,application/json"></label>
       <span id="file-status">尚未载入文件</span>
       <textarea id="json" placeholder="请选择 migration-map.json，也可以在这里粘贴内容"></textarea>
+      <fieldset>
+        <legend>操作安全等级</legend>
+        <label><input type="radio" name="level" value="diagnostic"> 诊断：只扫描，不修改</label>
+        <label><input type="radio" name="level" value="conservative" checked> 保守修复（默认）：仅写迁移标识，并恢复已确认承载节点的单层实色外观</label>
+        <label><input type="radio" name="level" value="structural"> 结构修复（实验性）：允许转换节点、自动布局与组件重建</label>
+      </fieldset>
+      <label class="risk"><input id="geometry" type="checkbox" disabled> 实验性几何恢复：允许写入坐标和尺寸，可能造成错位</label>
       <div class="actions">
         <button id="preview">仅扫描预览</button>
         <button id="repair">执行安全修复</button>
@@ -20,6 +27,8 @@
     <style>
       body { font: 12px system-ui, sans-serif; margin: 16px; }
       textarea { width: 100%; height: 240px; box-sizing: border-box; }
+      fieldset { display: grid; gap: 8px; margin: 12px 0; }
+      .risk { display: block; color: #c92a2a; margin: 8px 0; }
       .actions { display: flex; gap: 8px; margin: 12px 0; }
       button { margin: 0; }
       li { margin: 8px 0; }
@@ -30,6 +39,14 @@
     </style>
     <script>
       let loadedJson = "";
+      const selectedLevel = () => document.querySelector('input[name="level"]:checked').value;
+      const geometry = document.getElementById("geometry");
+      document.querySelectorAll('input[name="level"]').forEach((input) => {
+        input.onchange = () => {
+          geometry.disabled = selectedLevel() !== "structural";
+          if (geometry.disabled) geometry.checked = false;
+        };
+      });
       document.getElementById("file").onchange = async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -37,10 +54,10 @@
         document.getElementById("file-status").textContent = `已载入 ${file.name}（${(file.size / 1024 / 1024).toFixed(1)} MB）`;
       };
       document.getElementById("preview").onclick = () => {
-        parent.postMessage({ pluginMessage: { type: "preview", json: loadedJson || document.getElementById("json").value } }, "*");
+        parent.postMessage({ pluginMessage: { type: "preview", json: loadedJson || document.getElementById("json").value, safetyLevel: selectedLevel(), experimentalGeometry: geometry.checked } }, "*");
       };
       document.getElementById("repair").onclick = () => {
-        parent.postMessage({ pluginMessage: { type: "repair", json: loadedJson || document.getElementById("json").value } }, "*");
+        parent.postMessage({ pluginMessage: { type: "repair", json: loadedJson || document.getElementById("json").value, safetyLevel: selectedLevel(), experimentalGeometry: geometry.checked } }, "*");
       };
       window.onmessage = (event) => {
         const message = event.data.pluginMessage;

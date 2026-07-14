@@ -12,8 +12,10 @@ import {
   classifyApplyFailureStatus,
   classifyPreviewStatus,
   classifyBackgroundRectangle,
+  assessStructureMatch,
   createLayoutPlan,
   createOperationExecutionPlan,
+  createRepairSafetyPolicy,
   hasDirectSolidAppearance,
   protectRetainedBackgroundBeforeLayout,
   requiresLaunchSelection
@@ -511,6 +513,65 @@ describe("layout engine", () => {
     expect(
       createOperationExecutionPlan({ layoutRequested: true, layoutRisk: "high", appearanceSafe: false, componentSafe: true })
     ).toEqual({ applyLayout: false, applyAppearance: false, applyComponent: true, needsReview: true });
+  });
+
+  it("default conservative repair never enables root resize or child position writes", () => {
+    const policy = createRepairSafetyPolicy("conservative", true);
+    expect(policy.applyGeometry).toBe(false);
+    expect(policy.applyLayout).toBe(false);
+    expect(policy.convertGroup).toBe(false);
+    expect(policy.rebuildComponent).toBe(false);
+    expect(policy.applyAppearance).toBe(true);
+  });
+
+  it("diagnostic mode performs no writes", () => {
+    expect(Object.values(createRepairSafetyPolicy("diagnostic", true)).some(Boolean)).toBe(false);
+  });
+
+  it("requires an explicit experimental switch before structural geometry writes", () => {
+    expect(createRepairSafetyPolicy("structural").applyGeometry).toBe(false);
+    expect(createRepairSafetyPolicy("structural", true).applyGeometry).toBe(true);
+  });
+
+  function safeStructure(overrides = {}) {
+    return assessStructureMatch({
+      parentMatchHighConfidence: true,
+      sourceChildCount: 10,
+      targetChildCount: 10,
+      matchedChildCount: 10,
+      orderConsistency: 1,
+      hasMask: false,
+      hasBooleanDependency: false,
+      hasRotation: false,
+      hasComplexTransform: false,
+      hasUnknownAbsolute: false,
+      hasOverlap: false,
+      sourceWidth: 200,
+      sourceHeight: 40,
+      targetWidth: 200,
+      targetHeight: 40,
+      geometryWriteRequired: false,
+      externalBoundsStable: true,
+      ...overrides
+    });
+  }
+
+  it("does not apply auto layout when child counts differ", () => {
+    expect(safeStructure({ targetChildCount: 9 }).eligibleForAutoLayout).toBe(false);
+  });
+
+  it("does not apply auto layout below a 90 percent child match", () => {
+    expect(safeStructure({ matchedChildCount: 8 }).eligibleForAutoLayout).toBe(false);
+  });
+
+  it("does not convert a Group containing a mask", () => {
+    expect(safeStructure({ hasMask: true }).eligibleForGroupConversion).toBe(false);
+  });
+
+  it("does not permit structure writes when geometry correction would be required", () => {
+    const assessment = safeStructure({ geometryWriteRequired: true, externalBoundsStable: false });
+    expect(assessment.eligibleForAutoLayout).toBe(false);
+    expect(assessment.eligibleForGroupConversion).toBe(false);
   });
 
   it("does not claim changes when auto layout data is unavailable", () => {

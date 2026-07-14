@@ -13,5 +13,8 @@ describe("Figma preview summary", () => {
     expect(ui).toContain('let loadedJson = ""');
     expect(ui).toContain('json: loadedJson || document.getElementById("json").value');
     expect(ui).not.toContain('document.getElementById("json").value = await file.text()');
+    expect(ui).toContain('value="conservative" checked');
+    expect(ui).toContain('id="geometry" type="checkbox" disabled');
+    expect(ui).toContain("实验性几何恢复");
   });
 });

@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   classifyPixsoNodeType,
   createRootRefs,
+  findAppearanceOwnerCandidate,
   readLayoutPositioning,
   rootIndexWarnings,
   rootPath,
-  summarizeImageFills
+  summarizeImageFills,
+  summarizeStrokes
 } from "../apps/pixso-plugin/src/node-data";
 
 describe("Pixso 节点数据适配", () => {
@@ -91,5 +93,53 @@ describe("Pixso 节点数据适配", () => {
     expect(readLayoutPositioning({ layoutAlign: "STRETCH", isAbsolute: true }).value).toBe("ABSOLUTE");
     expect(readLayoutPositioning({ layoutGrow: 1, ignoreAutoLayout: false }).value).toBe("AUTO");
     expect(readLayoutPositioning({}).source).toBe("unavailable");
+  });
+
+  it("识别输入框的全尺寸背景为视觉承载节点", () => {
+    expect(
+      findAppearanceOwnerCandidate({
+        width: 200,
+        height: 36,
+        fills: [],
+        strokes: [],
+        children: [
+          { type: "RECTANGLE", x: 0, y: 0, width: 200, height: 36, visible: true, isMask: false },
+          { type: "TEXT", x: 12, y: 8, width: 80, height: 20 }
+        ]
+      })
+    ).toEqual({ reason: "full-size-background", childIndex: 0 });
+  });
+
+  it("多个全尺寸背景候选时不自动选择视觉承载节点", () => {
+    const rectangle = { type: "RECTANGLE", x: 0, y: 0, width: 200, height: 36, visible: true, isMask: false };
+    expect(
+      findAppearanceOwnerCandidate({ width: 200, height: 36, fills: [], strokes: [], children: [rectangle, rectangle] })
+    ).toEqual({ reason: "ambiguous" });
+  });
+
+  it("输出描边 Paint 完整性摘要", () => {
+    expect(
+      summarizeStrokes({
+        strokes: [{ type: "GRADIENT_LINEAR", opacity: 0.8, boundVariables: { color: "v1" } }],
+        strokeStyleId: "style-1",
+        strokeStyleName: "Input/Border"
+      }).value
+    ).toEqual({
+      count: 1,
+      paintTypes: ["GRADIENT_LINEAR"],
+      opacities: [0.8],
+      styleId: "style-1",
+      styleName: "Input/Border",
+      isMixed: false,
+      hasGradient: true,
+      hasVariableReference: true,
+      completeSingleSolid: false
+    });
+  });
+
+  it("描边字段不可用时明确报告缺失", () => {
+    const summary = summarizeStrokes({});
+    expect(summary.source).toBe("unavailable");
+    expect(summary.note).toContain("未开放描边");
   });
 });

@@ -19,6 +19,126 @@ export interface OperationExecutionPlan {
   needsReview: boolean;
 }
 
+export type RepairSafetyLevel = "diagnostic" | "conservative" | "structural";
+
+export interface RepairSafetyPolicy {
+  writeMigrationId: boolean;
+  applyAppearance: boolean;
+  applyLayout: boolean;
+  convertGroup: boolean;
+  rebuildComponent: boolean;
+  applyGeometry: boolean;
+}
+
+export function createRepairSafetyPolicy(
+  level: RepairSafetyLevel,
+  experimentalGeometry = false
+): RepairSafetyPolicy {
+  if (level === "diagnostic") {
+    return {
+      writeMigrationId: false,
+      applyAppearance: false,
+      applyLayout: false,
+      convertGroup: false,
+      rebuildComponent: false,
+      applyGeometry: false
+    };
+  }
+  if (level === "conservative") {
+    return {
+      writeMigrationId: true,
+      applyAppearance: true,
+      applyLayout: false,
+      convertGroup: false,
+      rebuildComponent: false,
+      applyGeometry: false
+    };
+  }
+  return {
+    writeMigrationId: true,
+    applyAppearance: true,
+    applyLayout: true,
+    convertGroup: true,
+    rebuildComponent: true,
+    applyGeometry: experimentalGeometry
+  };
+}
+
+export interface StructureMatchInput {
+  parentMatchHighConfidence: boolean;
+  sourceChildCount: number;
+  targetChildCount: number;
+  matchedChildCount: number;
+  orderConsistency: number;
+  hasMask: boolean;
+  hasBooleanDependency: boolean;
+  hasRotation: boolean;
+  hasComplexTransform: boolean;
+  hasUnknownAbsolute: boolean;
+  hasOverlap: boolean;
+  sourceWidth?: number;
+  sourceHeight?: number;
+  targetWidth?: number;
+  targetHeight?: number;
+  geometryWriteRequired: boolean;
+  externalBoundsStable: boolean;
+}
+
+export interface StructureMatchAssessment extends StructureMatchInput {
+  matchedRatio: number;
+  sizeWithinTolerance: boolean;
+  eligibleForAutoLayout: boolean;
+  eligibleForGroupConversion: boolean;
+  reasons: string[];
+}
+
+function dimensionWithinTolerance(source?: number, target?: number): boolean {
+  if (source === undefined || target === undefined) return false;
+  return Math.abs(source - target) <= Math.max(2, Math.abs(source) * 0.02);
+}
+
+export function assessStructureMatch(input: StructureMatchInput): StructureMatchAssessment {
+  const matchedRatio = input.sourceChildCount === 0 ? (input.targetChildCount === 0 ? 1 : 0) : input.matchedChildCount / input.sourceChildCount;
+  const sizeWithinTolerance =
+    dimensionWithinTolerance(input.sourceWidth, input.targetWidth) &&
+    dimensionWithinTolerance(input.sourceHeight, input.targetHeight);
+  const reasons: string[] = [];
+  if (!input.parentMatchHighConfidence) reasons.push("父节点不是唯一高置信匹配");
+  if (input.sourceChildCount !== input.targetChildCount) reasons.push("源与目标直接子节点数量不一致");
+  if (matchedRatio < 0.9) reasons.push("直接子节点匹配率低于 90%");
+  if (input.orderConsistency < 1) reasons.push("已匹配子节点顺序不一致");
+  if (input.hasMask) reasons.push("存在 Mask");
+  if (input.hasBooleanDependency) reasons.push("存在 Boolean 依赖");
+  if (input.hasRotation) reasons.push("存在旋转");
+  if (input.hasComplexTransform) reasons.push("存在复杂变换");
+  if (input.hasUnknownAbsolute) reasons.push("存在未知绝对定位");
+  if (input.hasOverlap) reasons.push("存在未确认重叠");
+  if (!sizeWithinTolerance) reasons.push("目标尺寸与源尺寸差异超过 2px 或 2%");
+  if (input.geometryWriteRequired) reasons.push("需要几何写回才能恢复结构");
+  if (!input.externalBoundsStable) reasons.push("无法确认转换前后外部边界不变");
+
+  const sharedSafe =
+    input.parentMatchHighConfidence &&
+    input.sourceChildCount === input.targetChildCount &&
+    matchedRatio >= 0.9 &&
+    input.orderConsistency === 1 &&
+    !input.hasMask &&
+    !input.hasUnknownAbsolute &&
+    !input.hasOverlap &&
+    sizeWithinTolerance &&
+    !input.geometryWriteRequired &&
+    input.externalBoundsStable;
+  return {
+    ...input,
+    matchedRatio,
+    sizeWithinTolerance,
+    eligibleForAutoLayout: sharedSafe,
+    eligibleForGroupConversion:
+      sharedSafe && !input.hasBooleanDependency && !input.hasRotation && !input.hasComplexTransform,
+    reasons
+  };
+}
+
 export function createOperationExecutionPlan(options: {
   layoutRequested: boolean;
   layoutRisk: "low" | "high";

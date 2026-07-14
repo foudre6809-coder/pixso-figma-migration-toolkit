@@ -40,10 +40,11 @@ In Figma Desktop:
 2. Choose `apps/figma-plugin/manifest.json`.
 3. Import the Sketch file.
 4. Run the plugin and choose or paste `migration-map.json`.
-5. Run **仅扫描预览** first. This stage does not modify Figma.
-6. Review the results, then run **执行安全修复**. High-risk items are skipped by default.
+5. Choose **诊断** and run **仅扫描预览** first. This stage does not modify Figma.
+6. Use **保守修复（默认）** for the first real run. It only writes migration IDs and restores complete single-solid appearance on a confirmed owner; it does not change geometry, node types, Auto Layout, or Components.
+7. **结构修复** and **实验性几何恢复** are opt-in and should be tested only on a clean duplicate.
 
-For acceptance testing, always start from a clean Sketch import. The first repair can change node bounds as Groups regain their original Pixso frame padding, so an older repaired copy is not a valid baseline for first-run matching quality. Successfully matched nodes receive a persistent migration ID for reliable repeat runs.
+For acceptance testing, always start from a clean Sketch import. Compare an untouched import, the earlier visually better build, and the current conservative build in separate files. Successfully matched nodes receive a persistent migration ID for reliable repeat runs.
 
 ## Verification
 

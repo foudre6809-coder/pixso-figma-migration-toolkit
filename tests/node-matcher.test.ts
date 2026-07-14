@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { native, unavailable, type MigrationNode } from "../packages/migration-schema/src";
-import { assessRecoveryCompatibility, matchNodes } from "../packages/node-matcher/src";
+import { assessRecoveryCompatibility, matchNodes, normalizeFlattenedRoot } from "../packages/node-matcher/src";
 import { classifyBackgroundRectangle, createLayoutPlan } from "../packages/layout-engine/src";
 
 function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
@@ -35,12 +35,53 @@ function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
       svgSummary: unavailable(),
       imageFillSummary: unavailable()
     },
+    appearance: {
+      fill: unavailable(),
+      stroke: unavailable(),
+      strokeWeight: unavailable(),
+      strokeAlign: unavailable(),
+      cornerRadii: unavailable()
+    },
     riskFlags: [],
     ...overrides
   };
 }
 
 describe("node matcher", () => {
+  it("normalizes paths and direct-child coordinates when Sketch flattens the root artboard", () => {
+    const root = node({
+      migrationId: "root",
+      name: "Input 输入框",
+      type: "FRAME",
+      path: ["Input 输入框[0]"],
+      rect: native({ x: -683, y: 4648, width: 1366, height: 6169 }),
+      layout: { ...node().layout, mode: native("NONE") }
+    });
+    const child = node({
+      migrationId: "child",
+      name: "Rectangle Copy 6",
+      type: "VECTOR",
+      path: ["Input 输入框[0]", "Rectangle Copy 6[0]"],
+      parentMigrationId: "root",
+      rect: native({ x: 20, y: 17, width: 1326, height: 6132 })
+    });
+
+    const result = normalizeFlattenedRoot([root, child], [
+      {
+        id: "target",
+        name: "Rectangle Copy 6",
+        type: "VECTOR",
+        path: ["Rectangle Copy 6[0]"],
+        rect: { x: -663, y: 4665, width: 1326, height: 6132 }
+      }
+    ]);
+
+    expect(result.flattenedRoot?.migrationId).toBe("root");
+    expect(result.nodes).toHaveLength(1);
+    expect(result.nodes[0].path).toEqual(["Rectangle Copy 6[0]"]);
+    expect(result.nodes[0].rect.value).toEqual({ x: -663, y: 4665, width: 1326, height: 6132 });
+  });
+
   it("matches confidently when migration id is present", () => {
     const [result] = matchNodes([node()], [
       {
@@ -161,6 +202,75 @@ describe("node matcher", () => {
     expect(result.status).toBe("matched");
     expect(result.candidateId).toBe("exact-sibling");
   });
+
+  it("assigns candidates one-to-one and retries the remaining node", () => {
+    const first = node({
+      migrationId: "first",
+      path: ["Design System[0]", "Button/Primary[0]"],
+      rect: native({ x: 10, y: 20, width: 120, height: 40 })
+    });
+    const second = node({
+      migrationId: "second",
+      path: ["Design System[0]", "Button/Primary[1]"],
+      rect: native({ x: 210, y: 20, width: 120, height: 40 })
+    });
+    const results = matchNodes([first, second], [
+      {
+        id: "candidate-first",
+        name: "Button/Primary",
+        type: "COMPONENT",
+        path: ["Design System[0]", "Button/Primary[0]"],
+        rect: { x: 10, y: 20, width: 120, height: 40 }
+      },
+      {
+        id: "candidate-second",
+        name: "Button/Primary",
+        type: "COMPONENT",
+        path: ["Design System[0]", "Button/Primary[1]"],
+        rect: { x: 210, y: 20, width: 120, height: 40 }
+      }
+    ]);
+
+    expect(results.map((result) => result.candidateId)).toEqual(["candidate-first", "candidate-second"]);
+    expect(new Set(results.map((result) => result.candidateId)).size).toBe(2);
+  });
+
+  it("keeps duplicated persisted migration ids ambiguous", () => {
+    const [result] = matchNodes([node()], [
+      {
+        id: "copy-a",
+        name: "Button/Primary",
+        type: "COMPONENT",
+        path: ["Design System[0]", "Button/Primary[0]"],
+        rect: { x: 10, y: 20, width: 120, height: 40 },
+        migrationId: "pxm_button"
+      },
+      {
+        id: "copy-b",
+        name: "Button/Primary",
+        type: "COMPONENT",
+        path: ["Design System[0]", "Button/Primary[0]"],
+        rect: { x: 10, y: 20, width: 120, height: 40 },
+        migrationId: "pxm_button"
+      }
+    ]);
+
+    expect(result.status).toBe("ambiguous");
+  });
+
+  it("rejects explicit incompatible node types even with identical geometry", () => {
+    const [result] = matchNodes([node({ type: "TEXT" })], [
+      {
+        id: "wrong-type",
+        name: "Button/Primary",
+        type: "RECTANGLE",
+        path: ["Design System[0]", "Button/Primary[0]"],
+        rect: { x: 10, y: 20, width: 120, height: 40 }
+      }
+    ]);
+
+    expect(result.status).toBe("unmatched");
+  });
 });
 
 describe("layout engine", () => {
@@ -240,6 +350,41 @@ describe("layout engine", () => {
 
     expect(plan.shouldApply).toBe(true);
     expect(plan.operations).toEqual([{ property: "layoutMode", value: "HORIZONTAL" }]);
+  });
+
+  it("maps inferred hug height to the primary axis for vertical layouts", () => {
+    const plan = createLayoutPlan(node({
+      type: "INSTANCE",
+      rect: native({ x: 0, y: 0, width: 230, height: 58 }),
+      layout: {
+        mode: native("VERTICAL"), paddingTop: native(0), paddingRight: native(0), paddingBottom: native(0), paddingLeft: native(0),
+        gap: native(4), widthMode: unavailable(), heightMode: unavailable()
+      }
+    }), {
+      children: [
+        node({ migrationId: "child-a", rect: native({ x: 0, y: 0, width: 230, height: 36 }) }),
+        node({ migrationId: "child-b", rect: native({ x: 0, y: 40, width: 108, height: 17 }) })
+      ]
+    });
+
+    expect(plan.operations).toContainEqual({ property: "primaryAxisSizingMode", value: "AUTO" });
+    expect(plan.operations).toContainEqual({ property: "minHeight", value: 58 });
+  });
+
+  it("maps inferred hug height to the counter axis for horizontal layouts", () => {
+    const plan = createLayoutPlan(node({
+      type: "FRAME",
+      rect: native({ x: 0, y: 0, width: 344, height: 36 }),
+      layout: {
+        mode: native("HORIZONTAL"), paddingTop: native(7), paddingRight: native(12), paddingBottom: native(7), paddingLeft: native(12),
+        gap: native(12), widthMode: unavailable(), heightMode: unavailable()
+      }
+    }), {
+      children: [node({ migrationId: "child", rect: native({ x: 12, y: 7, width: 320, height: 22 }) })]
+    });
+
+    expect(plan.operations).toContainEqual({ property: "counterAxisSizingMode", value: "AUTO" });
+    expect(plan.operations).toContainEqual({ property: "minHeight", value: 36 });
   });
 });
 

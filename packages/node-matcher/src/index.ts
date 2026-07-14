@@ -6,6 +6,7 @@ export interface MatchCandidate {
   type: string;
   path: string[];
   rect?: Rect;
+  absoluteRect?: Rect;
   migrationId?: string;
 }
 
@@ -29,6 +30,12 @@ export interface RecoveryIssue {
   code: string;
   severity: "warning" | "error";
   message: string;
+}
+
+export interface FlattenedRootNormalization {
+  nodes: MigrationNode[];
+  candidates: MatchCandidate[];
+  flattenedRoot?: MigrationNode;
 }
 
 function rectSimilarity(a?: Rect | null, b?: Rect): number {
@@ -56,13 +63,60 @@ function hasExactPath(a: string[], b: string[]): boolean {
 function typeCompatible(sourceType: string, candidateType: string): boolean {
   if (sourceType === candidateType) return true;
   if ((sourceType === "GROUP" && candidateType === "FRAME") || (sourceType === "FRAME" && candidateType === "GROUP")) return true;
-  if (sourceType === "VECTOR" && candidateType === "BOOLEAN") return true;
+  if ((sourceType === "COMPONENT" || sourceType === "INSTANCE") && (candidateType === "GROUP" || candidateType === "FRAME")) return true;
+  if (
+    sourceType === "VECTOR" &&
+    ["BOOLEAN", "RECTANGLE", "ELLIPSE", "LINE", "POLYGON", "STAR", "VECTOR"].includes(candidateType)
+  )
+    return true;
   return false;
+}
+
+export function normalizeFlattenedRoot(
+  nodes: MigrationNode[],
+  candidates: MatchCandidate[]
+): FlattenedRootNormalization {
+  const roots = nodes.filter((node) => !node.parentMigrationId);
+  if (roots.length !== 1) return { nodes, candidates };
+
+  const root = roots[0];
+  const canFlatten = (root.type === "FRAME" || root.type === "GROUP") && root.layout.mode.value === "NONE";
+  const hasRootCandidate = candidates.some(
+    (candidate) => candidate.path.length === 1 && candidate.name === root.name && typeCompatible(root.type, candidate.type)
+  );
+  if (!canFlatten || hasRootCandidate) return { nodes, candidates };
+
+  const nodeById = new Map(nodes.map((node) => [node.migrationId, node]));
+  const absoluteRectCache = new Map<string, Rect>();
+  const absoluteRectOf = (node: MigrationNode): Rect | undefined => {
+    const cached = absoluteRectCache.get(node.migrationId);
+    if (cached) return cached;
+    const rect = node.rect.value;
+    if (!rect) return undefined;
+    const parent = node.parentMigrationId ? nodeById.get(node.parentMigrationId) : undefined;
+    const parentRect = parent ? absoluteRectOf(parent) : undefined;
+    const absolute = parentRect ? { ...rect, x: parentRect.x + rect.x, y: parentRect.y + rect.y } : rect;
+    absoluteRectCache.set(node.migrationId, absolute);
+    return absolute;
+  };
+  const normalized = nodes
+    .filter((node) => node.migrationId !== root.migrationId)
+    .map((node) => ({ ...node, path: node.path.slice(1), rect: { ...node.rect, value: absoluteRectOf(node) ?? null } }));
+
+  return {
+    nodes: normalized,
+    candidates: candidates.map((candidate) => ({ ...candidate, rect: candidate.absoluteRect ?? candidate.rect })),
+    flattenedRoot: root
+  };
 }
 
 export function scoreCandidate(node: MigrationNode, candidate: MatchCandidate): { score: number; reasons: string[] } {
   const reasons: string[] = [];
   let score = 0;
+
+  if (node.type !== "UNKNOWN" && candidate.type !== "UNKNOWN" && !typeCompatible(node.type, candidate.type)) {
+    return { score: 0, reasons };
+  }
 
   if (candidate.migrationId && candidate.migrationId === node.migrationId) {
     score += 0.55;
@@ -83,40 +137,118 @@ export function scoreCandidate(node: MigrationNode, candidate: MatchCandidate): 
   if (pathScore > 0.5) reasons.push("path");
 
   const rectScore = rectSimilarity(node.rect.value, candidate.rect);
-  score += rectScore * 0.1;
-  if (rectScore > 0.85) reasons.push("rect");
+  const sourceRect = node.rect.value;
+  const exactGeometry =
+    sourceRect && candidate.rect
+      ? Math.abs(sourceRect.x - candidate.rect.x) +
+          Math.abs(sourceRect.y - candidate.rect.y) +
+          Math.abs(sourceRect.width - candidate.rect.width) +
+          Math.abs(sourceRect.height - candidate.rect.height) <=
+        4
+      : false;
+  score += exactGeometry ? 0.25 : rectScore * 0.1;
+  if (exactGeometry || rectScore > 0.85) reasons.push("rect");
 
   return { score: Math.min(1, score), reasons };
 }
 
 export function matchNodes(nodes: MigrationNode[], candidates: MatchCandidate[]): MatchResult[] {
-  return nodes.map((node) => {
-    const ranked = candidates
+  const pending = new Map(nodes.map((node) => [node.migrationId, node]));
+  const available = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const resolved = new Map<string, MatchResult>();
+  const candidateMigrationIdCounts = candidates.reduce((counts, candidate) => {
+    if (candidate.migrationId) counts.set(candidate.migrationId, (counts.get(candidate.migrationId) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+
+  const rank = (node: MigrationNode) =>
+    [...available.values()]
       .map((candidate) => ({ candidate, ...scoreCandidate(node, candidate) }))
       .sort((a, b) => b.score - a.score);
+
+  while (pending.size && available.size) {
+    const proposals = [...pending.values()]
+      .flatMap((node) => {
+        const ranked = rank(node);
+        const best = ranked[0];
+        const second = ranked[1];
+        const margin = best ? best.score - (second?.score ?? 0) : 0;
+        const duplicatedMigrationId =
+          best?.candidate.migrationId === node.migrationId && (candidateMigrationIdCounts.get(node.migrationId) ?? 0) > 1;
+        const confident =
+          best &&
+          !duplicatedMigrationId &&
+          best.score >= 0.45 &&
+          (best.reasons.includes("migrationId") || !second || margin >= 0.08);
+        return confident ? [{ node, best, margin }] : [];
+      })
+      .sort((a, b) => b.best.score - a.best.score || b.margin - a.margin);
+
+    if (!proposals.length) break;
+    const claimedThisRound = new Set<string>();
+    let assigned = 0;
+    for (const proposal of proposals) {
+      const candidateId = proposal.best.candidate.id;
+      if (!pending.has(proposal.node.migrationId) || !available.has(candidateId) || claimedThisRound.has(candidateId)) continue;
+      claimedThisRound.add(candidateId);
+      resolved.set(proposal.node.migrationId, {
+        migrationId: proposal.node.migrationId,
+        candidateId,
+        score: proposal.best.score,
+        status: "matched",
+        reasons: proposal.best.reasons
+      });
+      pending.delete(proposal.node.migrationId);
+      available.delete(candidateId);
+      assigned += 1;
+    }
+    if (!assigned) break;
+  }
+
+  for (const node of pending.values()) {
+    const ranked = rank(node);
     const best = ranked[0];
     const second = ranked[1];
+    const duplicatedMigrationId =
+      best?.candidate.migrationId === node.migrationId && (candidateMigrationIdCounts.get(node.migrationId) ?? 0) > 1;
 
     if (!best || best.score < 0.45) {
-      return { migrationId: node.migrationId, score: best?.score ?? 0, status: "unmatched", reasons: best?.reasons ?? [] };
+      resolved.set(node.migrationId, {
+        migrationId: node.migrationId,
+        score: best?.score ?? 0,
+        status: "unmatched",
+        reasons: best?.reasons ?? []
+      });
+      continue;
     }
-    if (second && best.score - second.score < 0.08) {
-      return {
+    if (duplicatedMigrationId || (second && best.score - second.score < 0.08)) {
+      resolved.set(node.migrationId, {
         migrationId: node.migrationId,
         candidateId: best.candidate.id,
         score: best.score,
         status: "ambiguous",
         reasons: best.reasons
-      };
+      });
+      continue;
     }
-    return {
+    resolved.set(node.migrationId, {
       migrationId: node.migrationId,
       candidateId: best.candidate.id,
       score: best.score,
       status: "matched",
       reasons: best.reasons
-    };
-  });
+    });
+  }
+
+  return nodes.map(
+    (node) =>
+      resolved.get(node.migrationId) ?? {
+        migrationId: node.migrationId,
+        score: 0,
+        status: "unmatched",
+        reasons: []
+      }
+  );
 }
 
 export function assessRecoveryCompatibility(node: MigrationNode, candidate: RecoveryCandidate): RecoveryIssue[] {

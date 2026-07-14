@@ -33,10 +33,20 @@ const fieldsToProbe = [
   "itemSpacing",
   "layoutSizingHorizontal",
   "layoutSizingVertical",
+  "primaryAxisSizingMode",
+  "counterAxisSizingMode",
   "componentKey",
   "mainComponent",
   "characters",
   "fills",
+  "strokes",
+  "strokeWeight",
+  "strokeAlign",
+  "cornerRadius",
+  "topLeftRadius",
+  "topRightRadius",
+  "bottomRightRadius",
+  "bottomLeftRadius",
   "visible",
   "isMask"
 ];
@@ -50,7 +60,9 @@ const fieldsToSample = new Set([
   "paddingLeft",
   "itemSpacing",
   "layoutSizingHorizontal",
-  "layoutSizingVertical"
+  "layoutSizingVertical",
+  "primaryAxisSizingMode",
+  "counterAxisSizingMode"
 ]);
 
 function readSelection(): RawNode[] {
@@ -88,31 +100,80 @@ function createMigrationId(node: RawNode, path: string[]): string {
     const existing = node.getPluginData("migrationId");
     if (existing) return existing;
   }
-  const base = `${path.join("/")}|${node.name ?? "unnamed"}|${node.type ?? "UNKNOWN"}|${node.width ?? 0}x${node.height ?? 0}`;
+  const base =
+    typeof node.id === "string"
+      ? `node:${node.id}`
+      : `${path.join("/")}|${node.name ?? "unnamed"}|${node.type ?? "UNKNOWN"}|${node.width ?? 0}x${node.height ?? 0}`;
   let hash = 0;
   for (let i = 0; i < base.length; i += 1) hash = (hash * 31 + base.charCodeAt(i)) >>> 0;
   return `pxm_${hash.toString(16)}`;
 }
 
-function writeMigrationIdIfAllowed(node: RawNode, migrationId: string): void {
-  if (typeof node.setPluginData !== "function") return;
+function writeMigrationIdIfAllowed(node: RawNode, migrationId: string): boolean {
+  if (typeof node.setPluginData !== "function") return false;
   try {
     node.setPluginData("migrationId", migrationId);
+    return typeof node.getPluginData !== "function" || node.getPluginData("migrationId") === migrationId;
   } catch {
-    // Private Pixso deployments may expose read methods without write permissions.
+    return false;
   }
 }
 
 function mapSizing(value: unknown) {
   if (value === "HUG" || value === "AUTO") return native("HUG" as const);
   if (value === "FILL" || value === "STRETCH") return native("FILL" as const);
+  if (value === "FIXED") return native("FIXED" as const);
   if (typeof value === "string") return inferred("FIXED" as const, `无法识别尺寸模式 ${value}，按固定尺寸处理。`);
   return unavailable<"FIXED" | "HUG" | "FILL">("未开放尺寸模式字段。");
 }
 
+function readSizing(node: RawNode, dimension: "width" | "height") {
+  const legacyValue = dimension === "width" ? node.layoutSizingHorizontal : node.layoutSizingVertical;
+  if (legacyValue !== undefined) return mapSizing(legacyValue);
+
+  const mode = node.layoutMode;
+  const usesPrimaryAxis =
+    (mode === "HORIZONTAL" && dimension === "width") || (mode === "VERTICAL" && dimension === "height");
+  return mapSizing(usesPrimaryAxis ? node.primaryAxisSizingMode : node.counterAxisSizingMode);
+}
+
+function normalizeSolidPaint(paints: unknown, fieldName: string): MigrationNode["appearance"]["fill"] {
+  if (!Array.isArray(paints)) return unavailable(`未开放${fieldName}字段。`);
+  const visiblePaints = paints.filter((item) => item?.visible !== false);
+  if (!visiblePaints.length) return { value: null, source: "native", note: `没有启用的${fieldName}。` };
+  if (visiblePaints.length !== 1 || visiblePaints[0]?.type !== "SOLID") {
+    return unavailable(`${fieldName}包含渐变、图片或多层 Paint，为避免覆盖原外观，本次不写入。`);
+  }
+  const paint = visiblePaints[0];
+  const color = paint.color;
+  if (![color?.r, color?.g, color?.b].every((value) => typeof value === "number")) {
+    return unavailable(`${fieldName}颜色格式无法识别。`);
+  }
+  return native({
+    color: { r: color.r, g: color.g, b: color.b },
+    opacity: typeof paint.opacity === "number" ? paint.opacity : 1
+  });
+}
+
+function normalizeStrokeAlign(value: unknown): MigrationNode["appearance"]["strokeAlign"] {
+  if (value === "INSIDE" || value === "CENTER" || value === "OUTSIDE") return native(value);
+  return unavailable("未开放描边位置字段。");
+}
+
+function normalizeCornerRadii(node: RawNode): MigrationNode["appearance"]["cornerRadii"] {
+  if (typeof node.cornerRadius === "number") {
+    return native([node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius]);
+  }
+  const radii = [node.topLeftRadius, node.topRightRadius, node.bottomRightRadius, node.bottomLeftRadius];
+  if (radii.every((value) => typeof value === "number")) {
+    return native(radii as [number, number, number, number]);
+  }
+  return unavailable("未开放圆角字段。");
+}
+
 function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: string): MigrationNode {
   const migrationId = createMigrationId(node, path);
-  writeMigrationIdIfAllowed(node, migrationId);
+  const migrationIdPersisted = writeMigrationIdIfAllowed(node, migrationId);
   const children = Array.isArray(node.children) ? node.children : [];
   const childIds = children.map((child: RawNode, index: number) =>
     createMigrationId(child, [...path, `${child.name ?? "unnamed"}[${index}]`])
@@ -143,8 +204,8 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
       paddingBottom: typeof node.paddingBottom === "number" ? native(node.paddingBottom) : unavailable("未开放下内边距字段。"),
       paddingLeft: typeof node.paddingLeft === "number" ? native(node.paddingLeft) : unavailable("未开放左内边距字段。"),
       gap: typeof node.itemSpacing === "number" ? native(node.itemSpacing) : unavailable("未开放元素间距字段。"),
-      widthMode: mapSizing(node.layoutSizingHorizontal),
-      heightMode: mapSizing(node.layoutSizingVertical)
+      widthMode: readSizing(node, "width"),
+      heightMode: readSizing(node, "height")
     },
     component: {
       componentKey: typeof node.componentKey === "string" ? native(node.componentKey) : unavailable("未开放组件标识字段。"),
@@ -160,9 +221,17 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
       svgSummary: typeOf(node) === "VECTOR" ? inferred("存在矢量节点", "能力检测未发现精确导出 SVG 的接口。") : unavailable(),
       imageFillSummary: Array.isArray(node.fills) ? inferred(`包含 ${node.fills.length} 个填充`, "填充详情需要人工验证。") : unavailable()
     },
+    appearance: {
+      fill: normalizeSolidPaint(node.fills, "填充"),
+      stroke: normalizeSolidPaint(node.strokes, "描边"),
+      strokeWeight: typeof node.strokeWeight === "number" ? native(node.strokeWeight) : unavailable("未开放描边粗细字段。"),
+      strokeAlign: normalizeStrokeAlign(node.strokeAlign),
+      cornerRadii: normalizeCornerRadii(node)
+    },
     riskFlags: [
       ...(node.isMask ? ["mask"] : []),
-      ...(typeOf(node) === "GROUP" ? ["group-may-import-as-frame-or-group"] : [])
+      ...(typeOf(node) === "GROUP" ? ["group-may-import-as-frame-or-group"] : []),
+      ...(!migrationIdPersisted ? ["migration-id-not-persisted"] : [])
     ]
   };
 }
@@ -246,6 +315,14 @@ function createCapabilityReport(roots: RawNode[]): CapabilityReport {
 }
 
 function createMigrationMap(scope: ExportScope, roots: RawNode[], index: number, total: number): MigrationMap {
+  const nodes = flatten(roots);
+  const migrationIds = new Set<string>();
+  for (const node of nodes) {
+    if (migrationIds.has(node.migrationId)) {
+      throw new Error(`检测到重复迁移标识 ${node.migrationId}，已停止导出以避免错误绑定。`);
+    }
+    migrationIds.add(node.migrationId);
+  }
   return {
     schemaVersion,
     createdAt: new Date().toISOString(),
@@ -257,7 +334,7 @@ function createMigrationMap(scope: ExportScope, roots: RawNode[], index: number,
     },
     exportScope: scope,
     batch: { index, total, rootCount: roots.length },
-    nodes: flatten(roots),
+    nodes,
     warnings: []
   };
 }

@@ -42,6 +42,8 @@ In Figma Desktop:
 4. Run the plugin and choose or paste `migration-map.json`.
 5. Review restored, partial, and failed items before touching the full file.
 
+For acceptance testing, always start from a clean Sketch import. The first repair can change node bounds as Groups regain their original Pixso frame padding, so an older repaired copy is not a valid baseline for first-run matching quality. Successfully matched nodes receive a persistent migration ID for reliable repeat runs.
+
 ## Verification
 
 ```bash
@@ -55,5 +57,6 @@ pnpm build
 
 - Pixso API access must be verified locally with the capability probe.
 - Component instance restoration is conservative. The plugin reports uncertain matches instead of binding incorrectly.
+- HUG height is restored as Figma Auto sizing with the Pixso height retained as a minimum, rather than forcing a fixed row height.
 - Cancellation takes effect between root-node batches, not midway through one large artboard.
 - Variants, variables, constraints, and prototypes are scanned as future work, not fully restored in this MVP.

@@ -19,11 +19,14 @@
 ## Manual Figma Checks
 
 1. Import the matching Sketch file into Figma Desktop.
-2. Select the imported scope.
+2. Use a clean import that has not been repaired by an older plugin version, then select only the imported scope.
 3. Run the repair plugin with the exported JSON.
 4. Review restored, partial, and failed counts.
 5. Click failed items and inspect whether the failure is due to API unavailability, Sketch rename/regroup, or unsupported structure.
 6. Confirm mismatched components are reported without conversion or instance rebinding.
+7. Run the same JSON a second time and confirm migration IDs prevent positional rematching failures.
+8. Clear selection outlines and compare Pixso/Figma screenshots for component bounds, text baselines, fills, strokes, corner radii, and spacing.
+9. Include a gradient/image-fill sample and confirm unsupported Paint data is preserved rather than cleared.
 
 ## MVP Sample Set
 

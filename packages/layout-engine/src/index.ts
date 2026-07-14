@@ -7,6 +7,10 @@ export interface LayoutPlan {
   warnings: string[];
 }
 
+export interface LayoutPlanContext {
+  children?: MigrationNode[];
+}
+
 export interface BackgroundRectangleCandidate {
   type: string;
   index: number;
@@ -59,7 +63,33 @@ function hasNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-export function createLayoutPlan(node: MigrationNode): LayoutPlan {
+function inferHugHeight(node: MigrationNode, children: MigrationNode[]): boolean {
+  const mode = node.layout.mode.value;
+  const container = node.rect.value;
+  const top = node.layout.paddingTop.value;
+  const bottom = node.layout.paddingBottom.value;
+  const gap = node.layout.gap.value;
+  const visibleChildren = children.filter((child) => child.visible.value !== false && child.rect.value);
+  if (!container || !hasNumber(top) || !hasNumber(bottom) || !hasNumber(gap) || !visibleChildren.length) return false;
+
+  const heights = visibleChildren.map((child) => child.rect.value?.height ?? 0);
+  const contentHeight =
+    mode === "HORIZONTAL"
+      ? Math.max(...heights)
+      : mode === "VERTICAL"
+        ? heights.reduce((sum, height) => sum + height, 0) + gap * Math.max(0, heights.length - 1)
+        : 0;
+  const expectedHeight = top + contentHeight + bottom;
+  const tolerance = Math.max(2, container.height * 0.05);
+  return Math.abs(container.height - expectedHeight) <= tolerance;
+}
+
+function sizingProperty(mode: "HORIZONTAL" | "VERTICAL", dimension: "width" | "height"): string {
+  if (mode === "HORIZONTAL") return dimension === "width" ? "primaryAxisSizingMode" : "counterAxisSizingMode";
+  return dimension === "height" ? "primaryAxisSizingMode" : "counterAxisSizingMode";
+}
+
+export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext = {}): LayoutPlan {
   const operations: LayoutPlan["operations"] = [];
   const warnings: string[] = [];
   const mode = node.layout.mode.value;
@@ -88,11 +118,24 @@ export function createLayoutPlan(node: MigrationNode): LayoutPlan {
     else warnings.push(`${property} 字段不可用`);
   }
 
-  if (node.layout.widthMode.value === "HUG") operations.push({ property: "primaryAxisSizingMode", value: "AUTO" });
-  if (node.layout.heightMode.value === "HUG") operations.push({ property: "counterAxisSizingMode", value: "AUTO" });
+  const widthMode = node.layout.widthMode.value;
+  const inferredHugHeight = node.layout.heightMode.value === null && inferHugHeight(node, context.children ?? []);
+  const heightMode = inferredHugHeight ? "HUG" : node.layout.heightMode.value;
+
+  if (widthMode === "HUG" || widthMode === "FIXED") {
+    operations.push({ property: sizingProperty(mode, "width"), value: widthMode === "HUG" ? "AUTO" : "FIXED" });
+  }
+  if (heightMode === "HUG" || heightMode === "FIXED") {
+    operations.push({ property: sizingProperty(mode, "height"), value: heightMode === "HUG" ? "AUTO" : "FIXED" });
+    if (heightMode === "HUG" && node.rect.value && node.rect.value.height > 0) {
+      operations.push({ property: "minHeight", value: node.rect.value.height });
+    }
+  }
+
+  if (inferredHugHeight) warnings.push("高度根据 Pixso 原始尺寸、子节点高度、Padding 和 Gap 推断为自适应。");
 
   if (node.layout.widthMode.source === "inferred" || node.layout.heightMode.source === "inferred") {
-    warnings.push("尺寸模式来自推断，请人工确认。")
+    warnings.push("尺寸模式来自推断，请人工确认。");
   }
 
   return {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { schemaVersion, validateCapabilityReport } from "../packages/migration-schema/src";
+import { schemaVersion, validateCapabilityReport, validateMigrationMap } from "../packages/migration-schema/src";
 
 describe("capability report schema", () => {
   it("keeps old capability reports compatible", () => {
@@ -34,5 +34,31 @@ describe("capability report schema", () => {
     });
 
     expect(report.fieldCoverage[0]?.sampleValues).toEqual(["HORIZONTAL", "NONE"]);
+  });
+});
+
+describe("migration appearance schema", () => {
+  it("keeps migration maps without appearance fields compatible", () => {
+    const node = {
+      migrationId: "node", name: "Frame", type: "FRAME", path: ["Frame[0]"], childMigrationIds: [],
+      rect: { value: { x: 0, y: 0, width: 100, height: 40 }, source: "native" }, visible: { value: true, source: "native" },
+      layout: Object.fromEntries(["mode", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "gap", "widthMode", "heightMode"].map((key) => [key, { value: null, source: "unavailable" }])),
+      component: { componentKey: { value: null, source: "unavailable" }, mainComponentId: { value: null, source: "unavailable" }, instanceOf: { value: null, source: "unavailable" } },
+      text: { characters: { value: null, source: "unavailable" }, styleSummary: { value: null, source: "unavailable" } },
+      asset: { svgSummary: { value: null, source: "unavailable" }, imageFillSummary: { value: null, source: "unavailable" } }, riskFlags: []
+    };
+    const map = validateMigrationMap({ schemaVersion, createdAt: new Date().toISOString(), sourceTool: "pixso", sourceEnvironment: { deployment: "private" }, exportScope: "selection", nodes: [node], warnings: [] });
+    expect(map.nodes[0]?.appearance.fill.source).toBe("unavailable");
+    expect(() =>
+      validateMigrationMap({
+        schemaVersion,
+        createdAt: new Date().toISOString(),
+        sourceTool: "pixso",
+        sourceEnvironment: { deployment: "private" },
+        exportScope: "selection",
+        nodes: [node, { ...node }],
+        warnings: []
+      })
+    ).toThrow(/迁移标识重复/);
   });
 });

@@ -1,6 +1,11 @@
 import { classifyBackgroundRectangle, createLayoutPlan } from "@pixso-figma-migration/layout-engine";
 import { type MigrationNode, validateMigrationMap } from "@pixso-figma-migration/migration-schema";
-import { assessRecoveryCompatibility, type MatchCandidate, matchNodes } from "@pixso-figma-migration/node-matcher";
+import {
+  assessRecoveryCompatibility,
+  type MatchCandidate,
+  matchNodes,
+  normalizeFlattenedRoot
+} from "@pixso-figma-migration/node-matcher";
 
 declare const __html__: string;
 
@@ -31,13 +36,25 @@ function readPluginMigrationId(node: BaseNode): string | undefined {
   return undefined;
 }
 
+function writePluginMigrationId(node: BaseNode, migrationId: string): void {
+  if ("setPluginData" in node && typeof node.setPluginData === "function") {
+    node.setPluginData("migrationId", migrationId);
+  }
+}
+
 function localRect(node: SceneNode) {
   if (!("x" in node) || !("y" in node) || !("width" in node) || !("height" in node)) return undefined;
   return { x: node.x, y: node.y, width: node.width, height: node.height };
 }
 
+function absoluteRect(node: SceneNode) {
+  if (!("absoluteTransform" in node) || !("width" in node) || !("height" in node)) return undefined;
+  return { x: node.absoluteTransform[0][2], y: node.absoluteTransform[1][2], width: node.width, height: node.height };
+}
+
 function typeOf(node: SceneNode): string {
   if (node.type === "COMPONENT_SET") return "COMPONENT";
+  if (node.type === "BOOLEAN_OPERATION") return "BOOLEAN";
   if (node.type === "RECTANGLE" && hasImageFill(node)) return "IMAGE";
   return node.type;
 }
@@ -58,6 +75,7 @@ function collectCandidates(root: BaseNode & ChildrenMixin, parentPath: string[] 
       type: typeOf(scene),
       path,
       rect: localRect(scene),
+      absoluteRect: absoluteRect(scene),
       migrationId: readPluginMigrationId(child)
     };
     const nested = "children" in child ? collectCandidates(child as BaseNode & ChildrenMixin, path) : [];
@@ -202,6 +220,25 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
   };
 }
 
+function restoreConvertedFrameBounds(
+  frame: FrameNode,
+  source: MigrationNode,
+  sourceRectCoordinates: "local" | "absolute"
+): string | undefined {
+  const sourceRect = source.rect.value;
+  const currentRect = sourceRectCoordinates === "absolute" ? absoluteRect(frame) : localRect(frame);
+  if (!sourceRect || !currentRect) return undefined;
+
+  const parentUsesAutoLayout =
+    frame.parent && "layoutMode" in frame.parent && frame.parent.layoutMode !== "NONE";
+  if (!parentUsesAutoLayout) {
+    frame.x += sourceRect.x - currentRect.x;
+    frame.y += sourceRect.y - currentRect.y;
+  }
+  frame.resizeWithoutConstraints(sourceRect.width, sourceRect.height);
+  return "已按 Pixso 原始边界恢复 Frame 的位置与尺寸。";
+}
+
 function applyOperation(node: FrameNode | ComponentNode | InstanceNode, property: string, value: string | number): void {
   if (property === "layoutMode" && (value === "HORIZONTAL" || value === "VERTICAL")) node.layoutMode = value;
   if (property === "paddingTop" && typeof value === "number") node.paddingTop = value;
@@ -209,12 +246,48 @@ function applyOperation(node: FrameNode | ComponentNode | InstanceNode, property
   if (property === "paddingBottom" && typeof value === "number") node.paddingBottom = value;
   if (property === "paddingLeft" && typeof value === "number") node.paddingLeft = value;
   if (property === "itemSpacing" && typeof value === "number") node.itemSpacing = value;
-  if (property === "primaryAxisSizingMode" && value === "AUTO") node.primaryAxisSizingMode = value;
-  if (property === "counterAxisSizingMode" && value === "AUTO") node.counterAxisSizingMode = value;
+  if (property === "primaryAxisSizingMode" && (value === "AUTO" || value === "FIXED")) node.primaryAxisSizingMode = value;
+  if (property === "counterAxisSizingMode" && (value === "AUTO" || value === "FIXED")) node.counterAxisSizingMode = value;
+  if (property === "minHeight" && typeof value === "number" && "minHeight" in node) {
+    (node as typeof node & { minHeight: number | null }).minHeight = value;
+  }
 }
 
-function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
-  const plan = createLayoutPlan(source);
+function applyAppearance(source: MigrationNode, node: FrameNode | ComponentNode | InstanceNode): string[] {
+  const messages: string[] = [];
+  const { appearance } = source;
+  if (appearance.fill.source !== "unavailable") {
+    node.fills = appearance.fill.value
+      ? [{ type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }]
+      : [];
+    messages.push("已恢复填充。");
+  }
+  if (appearance.stroke.source !== "unavailable") {
+    node.strokes = appearance.stroke.value
+      ? [{ type: "SOLID", color: appearance.stroke.value.color, opacity: appearance.stroke.value.opacity }]
+      : [];
+    messages.push("已恢复描边。");
+  }
+  if (typeof appearance.strokeWeight.value === "number") node.strokeWeight = appearance.strokeWeight.value;
+  if (appearance.strokeAlign.value) node.strokeAlign = appearance.strokeAlign.value;
+  if (appearance.cornerRadii.value) {
+    const [topLeft, topRight, bottomRight, bottomLeft] = appearance.cornerRadii.value;
+    node.topLeftRadius = topLeft;
+    node.topRightRadius = topRight;
+    node.bottomRightRadius = bottomRight;
+    node.bottomLeftRadius = bottomLeft;
+    messages.push("已恢复圆角。");
+  }
+  return messages;
+}
+
+function repairNode(
+  source: MigrationNode,
+  figmaNode: SceneNode,
+  sourceChildren: MigrationNode[],
+  sourceRectCoordinates: "local" | "absolute"
+): RepairItem {
+  const plan = createLayoutPlan(source, { children: sourceChildren });
   const compatibilityIssues = assessRecoveryCompatibility(source, {
     type: typeOf(figmaNode),
     rect: localRect(figmaNode),
@@ -233,6 +306,7 @@ function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
     };
   }
   if (!plan.shouldApply) {
+    writePluginMigrationId(figmaNode, source.migrationId);
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
@@ -250,6 +324,8 @@ function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
       layoutTarget = converted.frame;
       retainedBackground = converted.retainedBackground;
       messages.push("已将 Sketch 导入的 Group 原位转换为 Frame。", converted.message);
+      const boundsMessage = restoreConvertedFrameBounds(converted.frame, source, sourceRectCoordinates);
+      if (boundsMessage) messages.push(boundsMessage);
     }
   }
   if (!canAutoLayout(layoutTarget)) {
@@ -262,8 +338,19 @@ function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
     };
   }
 
-  for (const operation of plan.operations) applyOperation(layoutTarget, operation.property, operation.value);
-  if (retainedBackground) retainedBackground.layoutPositioning = "ABSOLUTE";
+  writePluginMigrationId(layoutTarget, source.migrationId);
+  const layoutModeOperation = plan.operations.find((operation) => operation.property === "layoutMode");
+  if (layoutModeOperation) applyOperation(layoutTarget, layoutModeOperation.property, layoutModeOperation.value);
+  if (retainedBackground) {
+    const retainedPosition = { x: retainedBackground.x, y: retainedBackground.y };
+    retainedBackground.layoutPositioning = "ABSOLUTE";
+    retainedBackground.x = retainedPosition.x;
+    retainedBackground.y = retainedPosition.y;
+  }
+  for (const operation of plan.operations) {
+    if (operation !== layoutModeOperation) applyOperation(layoutTarget, operation.property, operation.value);
+  }
+  messages.push(...applyAppearance(source, layoutTarget));
   plan.warnings.push(...compatibilityIssues.map((issue) => issue.message));
 
   return {
@@ -281,9 +368,20 @@ function repairFromJson(json: string): RepairItem[] {
     ? ({ children: figma.currentPage.selection } as BaseNode & ChildrenMixin)
     : figma.currentPage;
   const candidates = collectCandidates(scopeRoot);
-  const matches = matchNodes(map.nodes, candidates);
-  const sourceById = new Map(map.nodes.map((node) => [node.migrationId, node]));
+  const normalized = normalizeFlattenedRoot(map.nodes, candidates);
+  const matches = matchNodes(normalized.nodes, normalized.candidates);
+  const sourceById = new Map(normalized.nodes.map((node) => [node.migrationId, node]));
+  const sourceRectCoordinates = normalized.flattenedRoot ? "absolute" : "local";
   const results: RepairItem[] = [];
+
+  if (normalized.flattenedRoot) {
+    results.push({
+      migrationId: normalized.flattenedRoot.migrationId,
+      nodeName: normalized.flattenedRoot.name,
+      status: "verified",
+      messages: ["Sketch 已将最外层画板展平；已按原始画板坐标修正其直接子节点的匹配位置。"]
+    });
+  }
 
   for (const match of matches) {
     const source = sourceById.get(match.migrationId);
@@ -305,7 +403,11 @@ function repairFromJson(json: string): RepairItem[] {
       continue;
     }
     try {
-      results.push(repairNode(source, figmaNode as SceneNode));
+      const sourceChildren = source.childMigrationIds.flatMap((id) => {
+        const child = sourceById.get(id);
+        return child ? [child] : [];
+      });
+      results.push(repairNode(source, figmaNode as SceneNode, sourceChildren, sourceRectCoordinates));
     } catch (error) {
       console.error(`修复节点失败：${source.name} (${source.migrationId})`, error);
       results.push({

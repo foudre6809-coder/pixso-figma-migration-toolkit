@@ -20,6 +20,27 @@ export const RectSchema = z.object({
 });
 export type Rect = z.infer<typeof RectSchema>;
 
+export const SolidPaintSchema = z.object({
+  color: z.object({ r: z.number(), g: z.number(), b: z.number() }),
+  opacity: z.number().min(0).max(1)
+});
+
+const emptyAppearance = {
+  fill: { value: null, source: "unavailable" as const },
+  stroke: { value: null, source: "unavailable" as const },
+  strokeWeight: { value: null, source: "unavailable" as const },
+  strokeAlign: { value: null, source: "unavailable" as const },
+  cornerRadii: { value: null, source: "unavailable" as const }
+};
+
+export const AppearanceSchema = z.object({
+  fill: sourced(SolidPaintSchema),
+  stroke: sourced(SolidPaintSchema),
+  strokeWeight: sourced(z.number().nonnegative()),
+  strokeAlign: sourced(z.enum(["INSIDE", "CENTER", "OUTSIDE"])),
+  cornerRadii: sourced(z.tuple([z.number().nonnegative(), z.number().nonnegative(), z.number().nonnegative(), z.number().nonnegative()]))
+});
+
 export const NodeTypeSchema = z.enum([
   "PAGE",
   "FRAME",
@@ -67,6 +88,7 @@ export const MigrationNodeSchema = z.object({
     svgSummary: sourced(z.string()),
     imageFillSummary: sourced(z.string())
   }),
+  appearance: AppearanceSchema.default(emptyAppearance),
   riskFlags: z.array(z.string()).default([])
 });
 export type MigrationNode = z.infer<typeof MigrationNodeSchema>;
@@ -90,6 +112,19 @@ export const MigrationMapSchema = z.object({
     .optional(),
   nodes: z.array(MigrationNodeSchema),
   warnings: z.array(z.string()).default([])
+}).superRefine((map, context) => {
+  const seen = new Set<string>();
+  for (const node of map.nodes) {
+    if (seen.has(node.migrationId)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["nodes"],
+        message: `迁移标识重复：${node.migrationId}`
+      });
+      return;
+    }
+    seen.add(node.migrationId);
+  }
 });
 export type MigrationMap = z.infer<typeof MigrationMapSchema>;
 

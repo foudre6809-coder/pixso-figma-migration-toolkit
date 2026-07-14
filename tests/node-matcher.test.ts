@@ -368,7 +368,35 @@ describe("layout engine", () => {
       }
     });
 
-    expect(events).toEqual(["positioning:ABSOLUTE", "layoutMode"]);
+    expect(events).toEqual(["positioning:ABSOLUTE", "layoutMode", "positioning:ABSOLUTE"]);
+    expect({ x: background.x, y: background.y }).toEqual({ x: 12, y: 7 });
+  });
+
+  it("reapplies absolute positioning after layout when the runtime ignores the first write", () => {
+    const events: string[] = [];
+    let layoutEnabled = false;
+    let positioning: "AUTO" | "ABSOLUTE" = "AUTO";
+    const background = {
+      x: 12,
+      y: 7,
+      get layoutPositioning() {
+        return positioning;
+      },
+      set layoutPositioning(value: "AUTO" | "ABSOLUTE") {
+        events.push(`positioning:${value}`);
+        if (layoutEnabled) positioning = value;
+      }
+    };
+
+    protectRetainedBackgroundBeforeLayout(background, () => {
+      events.push("layoutMode");
+      layoutEnabled = true;
+      background.x += 100;
+      background.y += 100;
+    });
+
+    expect(events).toEqual(["positioning:ABSOLUTE", "layoutMode", "positioning:ABSOLUTE"]);
+    expect(background.layoutPositioning).toBe("ABSOLUTE");
     expect({ x: background.x, y: background.y }).toEqual({ x: 12, y: 7 });
   });
 

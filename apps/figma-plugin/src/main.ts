@@ -19,6 +19,7 @@ type RepairStatus = "modified" | "verified" | "partial" | "failed";
 type RunMode = "preview" | "apply";
 
 const launchSelectionIds = figma.currentPage.selection.map((node) => node.id);
+const launchedWithSelection = launchSelectionIds.length > 0;
 
 const matchStatusLabels = { matched: "已匹配但缺少目标节点", ambiguous: "存在歧义", unmatched: "未匹配" } as const;
 const reasonLabels: Record<string, string> = {
@@ -99,6 +100,7 @@ function canAutoLayout(node: SceneNode): node is FrameNode | ComponentNode | Ins
 interface GroupConversion {
   frame: FrameNode;
   message: string;
+  promotedBackground: boolean;
   retainedBackground?: RectangleNode;
 }
 
@@ -225,6 +227,7 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
   return {
     frame,
     message,
+    promotedBackground: backgroundClassification === "promote",
     retainedBackground: backgroundClassification === "retain" ? background : undefined
   };
 }
@@ -444,6 +447,7 @@ function repairNode(
 
   let layoutTarget: SceneNode = figmaNode;
   let retainedBackground: RectangleNode | undefined;
+  let promotedBackground = false;
   const messages: string[] = [];
   if (componentDecision.eligible && layoutTarget.type === "FRAME") {
     layoutTarget = figma.createComponentFromNode(layoutTarget);
@@ -454,6 +458,9 @@ function repairNode(
     if (converted) {
       layoutTarget = converted.frame;
       retainedBackground = converted.retainedBackground;
+      promotedBackground = converted.promotedBackground;
+      const scopeIndex = launchSelectionIds.indexOf(figmaNode.id);
+      if (scopeIndex >= 0) launchSelectionIds[scopeIndex] = converted.frame.id;
       messages.push("已将 Sketch 导入的 Group 原位转换为 Frame。", converted.message);
       const boundsMessage = restoreConvertedFrameBounds(converted.frame, source, sourceRectCoordinates);
       if (boundsMessage) messages.push(boundsMessage);
@@ -485,7 +492,7 @@ function repairNode(
     }
   }
 
-  if (canApplyAppearance(layoutTarget) && hasRecoverableAppearance(source)) {
+  if (canApplyAppearance(layoutTarget) && hasRecoverableAppearance(source) && !promotedBackground) {
     messages.push(...applyAppearance(source, layoutTarget));
   }
   if (!componentDecision.eligible && componentDecision.message) {
@@ -514,8 +521,12 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
     const node = figma.getNodeById(id);
     return node && "visible" in node ? [node as SceneNode] : [];
   });
-  const scope = figma.currentPage.selection.length ? figma.currentPage.selection : launchSelection;
-  const scopeRoot = scope.length ? ({ children: scope } as BaseNode & ChildrenMixin) : figma.currentPage;
+  if (launchedWithSelection && launchSelection.length !== launchSelectionIds.length) {
+    throw new Error("启动时选择的画板已被删除或替换。请关闭插件，重新选择画板后再运行，已阻止扩大为整页扫描。");
+  }
+  const scopeRoot = launchSelection.length
+    ? ({ children: launchSelection } as unknown as BaseNode & ChildrenMixin)
+    : figma.currentPage;
   const candidates = collectCandidates(scopeRoot);
   const normalized = normalizeFlattenedRoot(map.nodes, candidates);
   const matches = matchNodes(normalized.nodes, normalized.candidates);

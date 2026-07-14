@@ -40,8 +40,13 @@ export function protectRetainedBackgroundBeforeLayout<T extends RetainedBackgrou
   applyLayoutMode: () => void
 ): void {
   const position = { x: background.x, y: background.y };
-  background.layoutPositioning = "ABSOLUTE";
+  try {
+    background.layoutPositioning = "ABSOLUTE";
+  } catch {
+    // Some Figma runtimes reject ABSOLUTE until the parent has Auto Layout.
+  }
   applyLayoutMode();
+  background.layoutPositioning = "ABSOLUTE";
   background.x = position.x;
   background.y = position.y;
 }

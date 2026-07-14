@@ -7,7 +7,7 @@
 - `pnpm test`
 - `pnpm build`
 
-GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes retained-background position order, image/solid/mixed fill classification, sparse-selection page indices and fallback sources, preview status classification, split operation risk, partial execution status, safe static geometry restoration, overlap protection, safe Component eligibility, and selection-required repair scopes.
+GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes retained-background position order, image/solid/mixed fill classification, sparse-selection page indices and fallback sources, preview status classification, split operation risk, partial execution status, safe static geometry restoration, overlap protection, safe Component eligibility, selection-required repair scopes, and null wrapper appearance preservation.
 
 ## Manual Pixso Checks
 
@@ -38,6 +38,7 @@ GitHub Actions repeats these checks after a frozen-lockfile install. Unit covera
 15. Verify root artboard dimensions and static child coordinates against Pixso while confirming text line height remains adaptive.
 16. Load a migration map larger than 3 MB and confirm the UI reports its file name and size without rendering the full JSON into the textarea.
 17. Launch a selection/artboard map without a Figma selection and confirm the plugin blocks the run; confirm a page map still permits a full-page scan.
+18. Use an Instance whose outer fill/stroke is null and whose nested Frame owns the input border; confirm repair does not clear the imported wrapper or nested input appearance.
 
 ## MVP Sample Set
 

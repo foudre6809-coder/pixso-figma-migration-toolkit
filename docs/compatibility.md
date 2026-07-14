@@ -23,6 +23,7 @@
 - Figma provides a read-only preview stage and a separate safe-repair stage. Preview counts separately report nodes that will change, need no change, need review, or are blocked.
 - Selection/artboard migration maps require the matching Figma scope to be selected before plugin launch. Missing selection is blocked instead of silently expanding into a costly full-page scan; page maps still support full-page scans.
 - Large migration maps remain in plugin memory after file loading instead of being rendered into the visible textarea, keeping the preview and repair controls responsive.
+- A readable but null Pixso fill/stroke means the wrapper has no direct paint; it no longer clears an existing Figma fill, stroke, stroke metadata, or corner radius. Only explicit non-null solid appearance is written.
 - Layout, appearance, and Component risk are evaluated independently. Unknown overlaps or absolute positioning skip only Auto Layout; safe appearance and uniquely matched main Component work can still run and the node is reported as partial.
 - Each repair result includes `plannedChanges` and `appliedChanges`. A later failure after an earlier mutation returns partial, identifies the failed step, and tells the user that Figma Undo can revert the run.
 - Retained complex background rectangles are made absolute before `layoutMode` is set, then restored to their saved local position.
@@ -46,6 +47,7 @@
 - Figma results distinguish actual modifications from nodes that were only matched and verified, so zero-change runs are not reported as successful repairs.
 - Sketch-imported groups with recoverable layout data are converted in place before Auto Layout is applied. A plain full-size bottom rectangle is promoted to the Frame's fills, strokes, corners, and effects; complex backgrounds remain as absolute-positioned child layers; uncertain backgrounds remain untouched. Lost component links remain explicitly reported.
 - The `Input 输入框` export contains 960 metadata nodes. Pixso exposed 621 solid fills, 161 solid strokes, and 535 corner-radius values; these fields are available for Figma-side appearance restoration.
+- The refreshed capability report confirms fills and strokes are readable for all 960 nodes. Input component wrappers commonly expose null direct paints while their nested `画板 112` Frame carries the white fill, border, and 4px radius.
 
 ## Awaiting Clean-Import Visual Verification
 

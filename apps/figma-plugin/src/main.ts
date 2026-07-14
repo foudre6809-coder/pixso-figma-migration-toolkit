@@ -4,6 +4,7 @@ import {
   classifyBackgroundRectangle,
   createLayoutPlan,
   createOperationExecutionPlan,
+  hasDirectSolidAppearance,
   protectRetainedBackgroundBeforeLayout,
   requiresLaunchSelection
 } from "@pixso-figma-migration/layout-engine";
@@ -286,29 +287,33 @@ function paintsEqual(current: ReadonlyArray<Paint> | PluginAPI["mixed"], expecte
 function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunMode): string[] {
   const messages: string[] = [];
   const { appearance } = source;
-  if (appearance.fill.source !== "unavailable") {
-    const fills: ReadonlyArray<Paint> = appearance.fill.value
-      ? [{ type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }]
-      : [];
+  if (appearance.fill.value) {
+    const fills: ReadonlyArray<Paint> = [
+      { type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }
+    ];
     if (!paintsEqual(node.fills, fills)) {
       if (mode === "apply") node.fills = fills;
       messages.push("已恢复填充。");
     }
   }
-  if (appearance.stroke.source !== "unavailable") {
-    const strokes: ReadonlyArray<Paint> = appearance.stroke.value
-      ? [{ type: "SOLID", color: appearance.stroke.value.color, opacity: appearance.stroke.value.opacity }]
-      : [];
+  if (appearance.stroke.value) {
+    const strokes: ReadonlyArray<Paint> = [
+      { type: "SOLID", color: appearance.stroke.value.color, opacity: appearance.stroke.value.opacity }
+    ];
     if (!paintsEqual(node.strokes, strokes)) {
       if (mode === "apply") node.strokes = strokes;
       messages.push("已恢复描边。");
     }
   }
-  if (typeof appearance.strokeWeight.value === "number" && node.strokeWeight !== appearance.strokeWeight.value) {
+  if (
+    appearance.stroke.value &&
+    typeof appearance.strokeWeight.value === "number" &&
+    node.strokeWeight !== appearance.strokeWeight.value
+  ) {
     if (mode === "apply") node.strokeWeight = appearance.strokeWeight.value;
     messages.push("已恢复描边粗细。");
   }
-  if (appearance.strokeAlign.value && node.strokeAlign !== appearance.strokeAlign.value) {
+  if (appearance.stroke.value && appearance.strokeAlign.value && node.strokeAlign !== appearance.strokeAlign.value) {
     if (mode === "apply") node.strokeAlign = appearance.strokeAlign.value;
     messages.push("已恢复描边位置。");
   }
@@ -353,7 +358,7 @@ function applyGeometryRestorePlan(node: SceneNode, plan: GeometryRestorePlan, mo
 }
 
 function hasRecoverableAppearance(source: MigrationNode): boolean {
-  return Object.values(source.appearance).some((field) => field.source !== "unavailable");
+  return hasDirectSolidAppearance(source);
 }
 
 function hasForbiddenComponentAncestor(node: SceneNode): boolean {

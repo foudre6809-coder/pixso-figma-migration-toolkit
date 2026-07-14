@@ -51,6 +51,10 @@ export function requiresLaunchSelection(exportScope: "selection" | "page" | "art
   return exportScope !== "page";
 }
 
+export function hasDirectSolidAppearance(node: MigrationNode): boolean {
+  return Boolean(node.appearance.fill.value || node.appearance.stroke.value);
+}
+
 export interface BackgroundRectangleCandidate {
   type: string;
   index: number;

@@ -14,6 +14,7 @@ import {
   classifyBackgroundRectangle,
   createLayoutPlan,
   createOperationExecutionPlan,
+  hasDirectSolidAppearance,
   protectRetainedBackgroundBeforeLayout,
   requiresLaunchSelection
 } from "../packages/layout-engine/src";
@@ -470,6 +471,34 @@ describe("layout engine", () => {
     expect(requiresLaunchSelection("selection")).toBe(true);
     expect(requiresLaunchSelection("artboard")).toBe(true);
     expect(requiresLaunchSelection("page")).toBe(false);
+  });
+
+  it("does not treat an empty instance wrapper as recoverable appearance", () => {
+    const wrapper = node({
+      type: "INSTANCE",
+      appearance: {
+        fill: native(null),
+        stroke: native(null),
+        strokeWeight: native(1),
+        strokeAlign: native("INSIDE"),
+        cornerRadii: native([0, 0, 0, 0])
+      }
+    });
+    expect(hasDirectSolidAppearance(wrapper)).toBe(false);
+    expect(
+      hasDirectSolidAppearance(
+        node({
+          type: "FRAME",
+          appearance: {
+            fill: native({ color: { r: 1, g: 1, b: 1 }, opacity: 1 }),
+            stroke: native({ color: { r: 0.8, g: 0.82, b: 0.89 }, opacity: 1 }),
+            strokeWeight: native(1),
+            strokeAlign: native("INSIDE"),
+            cornerRadii: native([4, 4, 4, 4])
+          }
+        })
+      )
+    ).toBe(true);
   });
 
   it("keeps safe appearance work enabled when layout is high risk", () => {

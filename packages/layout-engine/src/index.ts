@@ -47,6 +47,10 @@ export function classifyApplyFailureStatus(appliedChanges: number): "partial" | 
   return appliedChanges > 0 ? "partial" : "failed";
 }
 
+export function requiresLaunchSelection(exportScope: "selection" | "page" | "artboard"): boolean {
+  return exportScope !== "page";
+}
+
 export interface BackgroundRectangleCandidate {
   type: string;
   index: number;

@@ -21,6 +21,8 @@
 - Image-filled Pixso nodes are classified as images before rectangle/vector type mapping. Image summaries include fill count, scale modes, opacity, blend mode, available hashes, and transform presence.
 - Selection and artboard exports prefer each root's real index in `currentPage.children`. `indexSource` records `page`, `selection`, or `unknown`; selection-order fallback adds a warning because indexed paths are less trustworthy.
 - Figma provides a read-only preview stage and a separate safe-repair stage. Preview counts separately report nodes that will change, need no change, need review, or are blocked.
+- Selection/artboard migration maps require the matching Figma scope to be selected before plugin launch. Missing selection is blocked instead of silently expanding into a costly full-page scan; page maps still support full-page scans.
+- Large migration maps remain in plugin memory after file loading instead of being rendered into the visible textarea, keeping the preview and repair controls responsive.
 - Layout, appearance, and Component risk are evaluated independently. Unknown overlaps or absolute positioning skip only Auto Layout; safe appearance and uniquely matched main Component work can still run and the node is reported as partial.
 - Each repair result includes `plannedChanges` and `appliedChanges`. A later failure after an earlier mutation returns partial, identifies the failed step, and tells the user that Figma Undo can revert the run.
 - Retained complex background rectangles are made absolute before `layoutMode` is set, then restored to their saved local position.
@@ -61,6 +63,7 @@
 - Figma plugin does not automatically rebind uncertain component instances.
 - Page export requires the private deployment to expose `currentPage.children`; otherwise the plugin reports the capability gap.
 - Cancellation is checked between root-node batches. A single very large artboard still completes its current batch before stopping.
+- Full-page matching can still be expensive on pages with many unrelated imported nodes; selection/artboard maps should be run against the selected matching scope.
 - Variables, variants, constraints, and prototypes are not fully restored in V1.
 
 ## Roadmap Only

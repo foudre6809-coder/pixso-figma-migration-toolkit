@@ -4,7 +4,8 @@ import {
   classifyBackgroundRectangle,
   createLayoutPlan,
   createOperationExecutionPlan,
-  protectRetainedBackgroundBeforeLayout
+  protectRetainedBackgroundBeforeLayout,
+  requiresLaunchSelection
 } from "@pixso-figma-migration/layout-engine";
 import { type MigrationNode, validateMigrationMap } from "@pixso-figma-migration/migration-schema";
 import {
@@ -647,6 +648,9 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
     throw new Error("你选择的是 capability-report.json（能力检测报告）。请改选 Pixso 导出的 migration-map.json。");
   }
   const map = validateMigrationMap(input);
+  if (requiresLaunchSelection(map.exportScope) && !launchedWithSelection) {
+    throw new Error("此迁移数据来自选择或画板范围。请关闭插件，先选中对应的 Figma 画板，再重新运行；已阻止扩大为整页扫描。");
+  }
   const launchSelection = launchSelectionIds.flatMap((id) => {
     const node = figma.getNodeById(id);
     return node && "visible" in node ? [node as SceneNode] : [];

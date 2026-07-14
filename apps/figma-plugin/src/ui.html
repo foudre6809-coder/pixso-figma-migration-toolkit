@@ -8,6 +8,7 @@
     <main>
       <h1>Pixso 迁移修复工具</h1>
       <label>迁移数据文件 <input id="file" type="file" accept=".json,application/json"></label>
+      <span id="file-status">尚未载入文件</span>
       <textarea id="json" placeholder="请选择 migration-map.json，也可以在这里粘贴内容"></textarea>
       <div class="actions">
         <button id="preview">仅扫描预览</button>
@@ -28,15 +29,18 @@
       .failed { color: #c92a2a; }
     </style>
     <script>
+      let loadedJson = "";
       document.getElementById("file").onchange = async (event) => {
         const file = event.target.files?.[0];
-        if (file) document.getElementById("json").value = await file.text();
+        if (!file) return;
+        loadedJson = await file.text();
+        document.getElementById("file-status").textContent = `已载入 ${file.name}（${(file.size / 1024 / 1024).toFixed(1)} MB）`;
       };
       document.getElementById("preview").onclick = () => {
-        parent.postMessage({ pluginMessage: { type: "preview", json: document.getElementById("json").value } }, "*");
+        parent.postMessage({ pluginMessage: { type: "preview", json: loadedJson || document.getElementById("json").value } }, "*");
       };
       document.getElementById("repair").onclick = () => {
-        parent.postMessage({ pluginMessage: { type: "repair", json: document.getElementById("json").value } }, "*");
+        parent.postMessage({ pluginMessage: { type: "repair", json: loadedJson || document.getElementById("json").value } }, "*");
       };
       window.onmessage = (event) => {
         const message = event.data.pluginMessage;

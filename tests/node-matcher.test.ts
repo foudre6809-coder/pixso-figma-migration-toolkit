@@ -14,7 +14,8 @@ import {
   classifyBackgroundRectangle,
   createLayoutPlan,
   createOperationExecutionPlan,
-  protectRetainedBackgroundBeforeLayout
+  protectRetainedBackgroundBeforeLayout,
+  requiresLaunchSelection
 } from "../packages/layout-engine/src";
 
 function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
@@ -463,6 +464,12 @@ describe("layout engine", () => {
   it("reports a later failure as partial after earlier changes were applied", () => {
     expect(classifyApplyFailureStatus(2)).toBe("partial");
     expect(classifyApplyFailureStatus(0)).toBe("failed");
+  });
+
+  it("requires an explicit launch selection for selection and artboard maps", () => {
+    expect(requiresLaunchSelection("selection")).toBe(true);
+    expect(requiresLaunchSelection("artboard")).toBe(true);
+    expect(requiresLaunchSelection("page")).toBe(false);
   });
 
   it("keeps safe appearance work enabled when layout is high risk", () => {

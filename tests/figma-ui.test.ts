@@ -10,5 +10,8 @@ describe("Figma preview summary", () => {
     expect(ui).toContain("需人工确认 ${counts.partial || 0}");
     expect(ui).toContain("无法处理 ${counts.failed || 0}");
     expect(ui).toContain('modified: "将修改", verified: "无需修改"');
+    expect(ui).toContain('let loadedJson = ""');
+    expect(ui).toContain('json: loadedJson || document.getElementById("json").value');
+    expect(ui).not.toContain('document.getElementById("json").value = await file.text()');
   });
 });

@@ -13,6 +13,7 @@ import {
   classifyPixsoNodeType,
   createRootRefs,
   readLayoutPositioning,
+  rootIndexWarnings,
   rootPath,
   summarizeImageFills
 } from "./node-data";
@@ -89,12 +90,12 @@ function readSelection(): RawNode[] {
 
 function rootsForScope(scope: ExportScope): RootRef[] {
   const selection = readSelection();
+  const pageChildren = pixso?.currentPage?.children;
   if (scope === "page") {
-    const children = pixso?.currentPage?.children;
-    if (!Array.isArray(children)) throw new Error("当前 Pixso 私有化版本未开放当前页面的子节点接口。");
-    return createRootRefs(children);
+    if (!Array.isArray(pageChildren)) throw new Error("当前 Pixso 私有化版本未开放当前页面的子节点接口。");
+    return createRootRefs(pageChildren, pageChildren, "page");
   }
-  const selectionRefs = createRootRefs(selection);
+  const selectionRefs = createRootRefs(selection, Array.isArray(pageChildren) ? pageChildren : undefined, "selection");
   if (scope === "artboard") {
     const artboards = selectionRefs.filter(({ node }) => Array.isArray(node.children));
     if (!artboards.length) throw new Error("请先选择一个或多个画板，再按画板范围导出。");
@@ -180,7 +181,13 @@ function normalizeCornerRadii(node: RawNode): MigrationNode["appearance"]["corne
   return unavailable("未开放圆角字段。");
 }
 
-function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: string, originalIndex?: number): MigrationNode {
+function toMigrationNode(
+  node: RawNode,
+  path: string[],
+  parentMigrationId?: string,
+  originalIndex?: number,
+  indexSource?: RootRef["indexSource"]
+): MigrationNode {
   const migrationId = createMigrationId(node, path);
   const migrationIdPersisted = writeMigrationIdIfAllowed(node, migrationId);
   const children = Array.isArray(node.children) ? node.children : [];
@@ -192,6 +199,7 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
     migrationId,
     originalId: typeof node.id === "string" ? node.id : undefined,
     originalIndex,
+    indexSource,
     name: String(node.name ?? "Unnamed"),
     type: classifyPixsoNodeType(node),
     path,
@@ -265,7 +273,7 @@ function flatten(nodes: RawNode[], parentPath: string[] = [], parentMigrationId?
 function flattenRoots(roots: RootRef[]): MigrationNode[] {
   return roots.flatMap((root) => {
     const path = rootPath(root);
-    const mapped = toMigrationNode(root.node, path, undefined, root.originalIndex);
+    const mapped = toMigrationNode(root.node, path, undefined, root.originalIndex, root.indexSource);
     const children = Array.isArray(root.node.children) ? flatten(root.node.children, path, mapped.migrationId) : [];
     return [mapped, ...children];
   });
@@ -349,6 +357,7 @@ function createMigrationMap(scope: ExportScope, roots: RootRef[], index: number,
     }
     migrationIds.add(node.migrationId);
   }
+  const warnings = rootIndexWarnings(roots);
   return {
     schemaVersion,
     createdAt: new Date().toISOString(),
@@ -361,7 +370,7 @@ function createMigrationMap(scope: ExportScope, roots: RootRef[], index: number,
     exportScope: scope,
     batch: { index, total, rootCount: roots.length },
     nodes,
-    warnings: []
+    warnings
   };
 }
 

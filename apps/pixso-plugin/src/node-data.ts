@@ -10,14 +10,37 @@ export type RawNode = Record<string, any>;
 export interface RootRef {
   node: RawNode;
   originalIndex: number;
+  indexSource: "page" | "selection" | "unknown";
 }
 
-export function createRootRefs(nodes: RawNode[]): RootRef[] {
-  return nodes.map((node, originalIndex) => ({ node, originalIndex }));
+function pageIndexOf(node: RawNode, pageChildren: RawNode[]): number {
+  const referenceIndex = pageChildren.indexOf(node);
+  if (referenceIndex >= 0) return referenceIndex;
+  if (typeof node.id !== "string") return -1;
+  return pageChildren.findIndex((child) => child?.id === node.id);
+}
+
+export function createRootRefs(
+  nodes: RawNode[],
+  pageChildren?: RawNode[],
+  fallbackIndexSource: RootRef["indexSource"] = "unknown"
+): RootRef[] {
+  return nodes.map((node, selectionIndex) => {
+    const pageIndex = Array.isArray(pageChildren) ? pageIndexOf(node, pageChildren) : -1;
+    return pageIndex >= 0
+      ? { node, originalIndex: pageIndex, indexSource: "page" }
+      : { node, originalIndex: selectionIndex, indexSource: fallbackIndexSource };
+  });
 }
 
 export function rootPath(ref: RootRef): string[] {
   return [`${String(ref.node.name ?? "Unnamed")}[${ref.originalIndex}]`];
+}
+
+export function rootIndexWarnings(refs: RootRef[]): string[] {
+  return refs.some((ref) => ref.indexSource !== "page")
+    ? ["当前范围无法确认根节点在页面中的真实索引，已回退到选择顺序；根路径索引可信度下降，请在 Figma 匹配结果中重点复核同名节点。"]
+    : [];
 }
 
 export function hasImageFill(fills: unknown): boolean {

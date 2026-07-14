@@ -12,6 +12,41 @@ export interface LayoutPlanContext {
   children?: MigrationNode[];
 }
 
+export interface OperationExecutionPlan {
+  applyLayout: boolean;
+  applyAppearance: boolean;
+  applyComponent: boolean;
+  needsReview: boolean;
+}
+
+export function createOperationExecutionPlan(options: {
+  layoutRequested: boolean;
+  layoutRisk: "low" | "high";
+  appearanceSafe: boolean;
+  componentSafe: boolean;
+}): OperationExecutionPlan {
+  return {
+    applyLayout: options.layoutRequested && options.layoutRisk === "low",
+    applyAppearance: options.appearanceSafe,
+    applyComponent: options.componentSafe,
+    needsReview: options.layoutRequested && options.layoutRisk === "high"
+  };
+}
+
+export function classifyPreviewStatus(options: {
+  plannedChanges: number;
+  needsReview: boolean;
+  blocked: boolean;
+}): "modified" | "verified" | "partial" | "failed" {
+  if (options.blocked) return "failed";
+  if (options.needsReview) return "partial";
+  return options.plannedChanges > 0 ? "modified" : "verified";
+}
+
+export function classifyApplyFailureStatus(appliedChanges: number): "partial" | "failed" {
+  return appliedChanges > 0 ? "partial" : "failed";
+}
+
 export interface BackgroundRectangleCandidate {
   type: string;
   index: number;

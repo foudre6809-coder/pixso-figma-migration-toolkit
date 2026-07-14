@@ -47,7 +47,7 @@
             return acc;
           }, {});
           document.getElementById("summary").textContent = message.mode === "preview"
-            ? `可安全处理 ${counts.verified || 0}，需人工确认 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`
+            ? `将修改 ${counts.modified || 0}，无需修改 ${counts.verified || 0}，需人工确认 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`
             : `已修改 ${counts.modified || 0}，无需修改 ${counts.verified || 0}，部分处理 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`;
           const list = document.getElementById("results");
           list.replaceChildren(...message.results.map((item) => {
@@ -58,9 +58,12 @@
             button.disabled = !item.figmaNodeId;
             button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: item.figmaNodeId } }, "*");
             const statusLabels = message.mode === "preview"
-              ? { modified: "可安全处理", verified: "可安全处理", partial: "需人工确认", failed: "无法处理" }
+              ? { modified: "将修改", verified: "无需修改", partial: "需人工确认", failed: "无法处理" }
               : { modified: "已修改", verified: "无需修改", partial: "部分处理", failed: "无法处理" };
-            row.append(button, document.createTextNode(` ${statusLabels[item.status]}：${item.nodeName} ${item.messages.join("；")}`));
+            const applied = message.mode === "repair" && item.appliedChanges?.length
+              ? ` 已执行：${item.appliedChanges.join("、")}。`
+              : "";
+            row.append(button, document.createTextNode(` ${statusLabels[item.status]}：${item.nodeName}${applied} ${item.messages.join("；")}`));
             return row;
           }));
         }

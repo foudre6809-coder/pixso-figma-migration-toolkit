@@ -3,6 +3,7 @@ import {
   classifyPixsoNodeType,
   createRootRefs,
   readLayoutPositioning,
+  rootIndexWarnings,
   rootPath,
   summarizeImageFills
 } from "../apps/pixso-plugin/src/node-data";
@@ -55,11 +56,34 @@ describe("Pixso 节点数据适配", () => {
   });
 
   it("分批后仍保留根节点在原选择集中的索引", () => {
-    const refs = createRootRefs([{ name: "A" }, { name: "B" }, { name: "C" }]);
+    const refs = createRootRefs([{ name: "A" }, { name: "B" }, { name: "C" }], undefined, "selection");
     const secondBatch = refs.slice(2, 3);
 
     expect(secondBatch[0]?.originalIndex).toBe(2);
     expect(rootPath(secondBatch[0]!)).toEqual(["C[2]"]);
+  });
+
+  it("稀疏选择使用节点在页面中的真实索引", () => {
+    const page = [
+      { id: "1", name: "A" },
+      { id: "2", name: "B" },
+      { id: "3", name: "C" },
+      { id: "4", name: "D" },
+      { id: "5", name: "E" }
+    ];
+    const refs = createRootRefs([page[1]!, { ...page[4]! }], page, "selection");
+
+    expect(refs.map(({ originalIndex }) => originalIndex)).toEqual([1, 4]);
+    expect(refs.map(({ indexSource }) => indexSource)).toEqual(["page", "page"]);
+  });
+
+  it("页面子节点不可用时标记为选择顺序回退", () => {
+    const refs = createRootRefs([{ id: "2" }, { id: "5" }], undefined, "selection");
+    expect(refs.map(({ originalIndex, indexSource }) => [originalIndex, indexSource])).toEqual([
+      [0, "selection"],
+      [1, "selection"]
+    ]);
+    expect(rootIndexWarnings(refs).join(" ")).toContain("索引可信度下降");
   });
 
   it("探测绝对定位和忽略自动布局候选字段", () => {

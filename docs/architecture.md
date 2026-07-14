@@ -28,5 +28,11 @@ The matcher scores migration ID, name, type, hierarchy path, and geometry. Ambig
 
 - Pixso plugin is read-first and selected-scope by default.
 - Every field carries a source marker: `native`, `inferred`, or `unavailable`.
-- Figma plugin applies layout only to nodes that can receive Auto Layout.
+- Figma plugin plans geometry, layout, appearance, and Component operations separately. A high-risk layout suppresses only layout operations.
+- Preview distinguishes planned changes from no-change matches. Apply results retain `appliedChanges`, so partial mutations and failed later steps remain auditable and undoable.
+- Static coordinate restoration requires a unique high-confidence match and a matched non-Auto-Layout parent. Root restoration changes size only, never the Figma canvas position.
 - Component/instance restoration is conservative and reports uncertain cases.
+
+## Reserved Roadmap Boundaries
+
+The V1 architecture leaves extension points for icon Group conversion, unreferenced master scanning, and instance replacement. These remain roadmap items and are not part of the current migration execution path.

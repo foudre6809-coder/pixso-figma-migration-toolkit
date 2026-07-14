@@ -3,13 +3,17 @@ import { native, unavailable, type MigrationNode } from "../packages/migration-s
 import {
   assessRecoveryCompatibility,
   canSafelyRebuildMainComponent,
+  createSafeGeometryRestorePlan,
   isHighConfidenceUniqueMatch,
   matchNodes,
   normalizeFlattenedRoot
 } from "../packages/node-matcher/src";
 import {
+  classifyApplyFailureStatus,
+  classifyPreviewStatus,
   classifyBackgroundRectangle,
   createLayoutPlan,
+  createOperationExecutionPlan,
   protectRetainedBackgroundBeforeLayout
 } from "../packages/layout-engine/src";
 
@@ -300,6 +304,46 @@ describe("node matcher", () => {
     })).toBe(false);
   });
 
+  it("restores only the root size and keeps its canvas position", () => {
+    const source = node({ rect: native({ x: -9904, y: -8545, width: 1366, height: 6169 }) });
+    const plan = createSafeGeometryRestorePlan(
+      source,
+      undefined,
+      { migrationId: source.migrationId, candidateId: "root", score: 0.9, status: "matched", reasons: ["name", "type", "path"] },
+      { x: -663, y: 4665, width: 1326, height: 6132 },
+      { parentCandidateMatched: false, coordinates: "local", canResizeRoot: true }
+    );
+
+    expect(plan).toEqual({ width: 1366, height: 6169 });
+  });
+
+  it("restores local position only under the matched static parent", () => {
+    const parent = node({ migrationId: "parent", layout: { ...node().layout, mode: native("NONE") } });
+    const child = node({ parentMigrationId: "parent", rect: native({ x: 20, y: 17, width: 1326, height: 6132 }) });
+    const match = {
+      migrationId: child.migrationId,
+      candidateId: "child",
+      score: 0.9,
+      status: "matched" as const,
+      reasons: ["name", "type", "path"]
+    };
+
+    expect(
+      createSafeGeometryRestorePlan(child, parent, match, { x: 0, y: 0, width: 1326, height: 6132 }, {
+        parentCandidateMatched: true,
+        coordinates: "local",
+        canResizeRoot: true
+      })
+    ).toEqual({ x: 20, y: 17 });
+    expect(
+      createSafeGeometryRestorePlan(child, parent, match, { x: 0, y: 0, width: 1326, height: 6132 }, {
+        parentCandidateMatched: false,
+        coordinates: "local",
+        canResizeRoot: true
+      })
+    ).toBeUndefined();
+  });
+
   it("rejects explicit incompatible node types even with identical geometry", () => {
     const [result] = matchNodes([node({ type: "TEXT" })], [
       {
@@ -407,6 +451,30 @@ describe("layout engine", () => {
     expect(plan.operations).toContainEqual({ property: "layoutMode", value: "HORIZONTAL" });
     expect(plan.operations).toContainEqual({ property: "paddingRight", value: 16 });
     expect(plan.operations).toContainEqual({ property: "itemSpacing", value: 8 });
+  });
+
+  it("does not count a preview node without planned changes as will-modify", () => {
+    expect(classifyPreviewStatus({ plannedChanges: 0, needsReview: false, blocked: false })).toBe("verified");
+    expect(classifyPreviewStatus({ plannedChanges: 1, needsReview: false, blocked: false })).toBe("modified");
+    expect(classifyPreviewStatus({ plannedChanges: 1, needsReview: true, blocked: false })).toBe("partial");
+    expect(classifyPreviewStatus({ plannedChanges: 1, needsReview: false, blocked: true })).toBe("failed");
+  });
+
+  it("reports a later failure as partial after earlier changes were applied", () => {
+    expect(classifyApplyFailureStatus(2)).toBe("partial");
+    expect(classifyApplyFailureStatus(0)).toBe("failed");
+  });
+
+  it("keeps safe appearance work enabled when layout is high risk", () => {
+    expect(
+      createOperationExecutionPlan({ layoutRequested: true, layoutRisk: "high", appearanceSafe: true, componentSafe: false })
+    ).toEqual({ applyLayout: false, applyAppearance: true, applyComponent: false, needsReview: true });
+  });
+
+  it("keeps safe component rebuilding enabled when layout is high risk", () => {
+    expect(
+      createOperationExecutionPlan({ layoutRequested: true, layoutRisk: "high", appearanceSafe: false, componentSafe: true })
+    ).toEqual({ applyLayout: false, applyAppearance: false, applyComponent: true, needsReview: true });
   });
 
   it("does not claim changes when auto layout data is unavailable", () => {

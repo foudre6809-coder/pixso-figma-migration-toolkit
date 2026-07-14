@@ -1,12 +1,17 @@
 import {
+  classifyApplyFailureStatus,
+  classifyPreviewStatus,
   classifyBackgroundRectangle,
   createLayoutPlan,
+  createOperationExecutionPlan,
   protectRetainedBackgroundBeforeLayout
 } from "@pixso-figma-migration/layout-engine";
 import { type MigrationNode, validateMigrationMap } from "@pixso-figma-migration/migration-schema";
 import {
   assessRecoveryCompatibility,
   canSafelyRebuildMainComponent,
+  createSafeGeometryRestorePlan,
+  type GeometryRestorePlan,
   type MatchResult,
   type MatchCandidate,
   matchNodes,
@@ -35,6 +40,8 @@ interface RepairItem {
   nodeName: string;
   status: RepairStatus;
   figmaNodeId?: string;
+  plannedChanges: string[];
+  appliedChanges: string[];
   messages: string[];
 }
 
@@ -275,7 +282,7 @@ function paintsEqual(current: ReadonlyArray<Paint> | PluginAPI["mixed"], expecte
   return current !== figma.mixed && JSON.stringify(current) === JSON.stringify(expected);
 }
 
-function applyAppearance(source: MigrationNode, node: AppearanceNode): string[] {
+function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunMode): string[] {
   const messages: string[] = [];
   const { appearance } = source;
   if (appearance.fill.source !== "unavailable") {
@@ -283,7 +290,7 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode): string[] 
       ? [{ type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }]
       : [];
     if (!paintsEqual(node.fills, fills)) {
-      node.fills = fills;
+      if (mode === "apply") node.fills = fills;
       messages.push("已恢复填充。");
     }
   }
@@ -292,16 +299,16 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode): string[] 
       ? [{ type: "SOLID", color: appearance.stroke.value.color, opacity: appearance.stroke.value.opacity }]
       : [];
     if (!paintsEqual(node.strokes, strokes)) {
-      node.strokes = strokes;
+      if (mode === "apply") node.strokes = strokes;
       messages.push("已恢复描边。");
     }
   }
   if (typeof appearance.strokeWeight.value === "number" && node.strokeWeight !== appearance.strokeWeight.value) {
-    node.strokeWeight = appearance.strokeWeight.value;
+    if (mode === "apply") node.strokeWeight = appearance.strokeWeight.value;
     messages.push("已恢复描边粗细。");
   }
   if (appearance.strokeAlign.value && node.strokeAlign !== appearance.strokeAlign.value) {
-    node.strokeAlign = appearance.strokeAlign.value;
+    if (mode === "apply") node.strokeAlign = appearance.strokeAlign.value;
     messages.push("已恢复描边位置。");
   }
   if (appearance.cornerRadii.value && "topLeftRadius" in node) {
@@ -312,12 +319,34 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode): string[] 
       node.bottomRightRadius !== bottomRight ||
       node.bottomLeftRadius !== bottomLeft
     ) {
-      node.topLeftRadius = topLeft;
-      node.topRightRadius = topRight;
-      node.bottomRightRadius = bottomRight;
-      node.bottomLeftRadius = bottomLeft;
+      if (mode === "apply") {
+        node.topLeftRadius = topLeft;
+        node.topRightRadius = topRight;
+        node.bottomRightRadius = bottomRight;
+        node.bottomLeftRadius = bottomLeft;
+      }
       messages.push("已恢复圆角。");
     }
+  }
+  return messages;
+}
+
+function canResizeWithoutConstraints(node: SceneNode): node is SceneNode & { resizeWithoutConstraints(width: number, height: number): void } {
+  return "resizeWithoutConstraints" in node && typeof node.resizeWithoutConstraints === "function";
+}
+
+function applyGeometryRestorePlan(node: SceneNode, plan: GeometryRestorePlan, mode: RunMode): string[] {
+  const messages: string[] = [];
+  if (typeof plan.width === "number" && typeof plan.height === "number") {
+    if (mode === "apply" && canResizeWithoutConstraints(node)) node.resizeWithoutConstraints(plan.width, plan.height);
+    messages.push(`${mode === "preview" ? "预览：可" : "已"}按 Pixso 恢复根画板尺寸 ${plan.width}×${plan.height}。`);
+  }
+  if (typeof plan.x === "number" && typeof plan.y === "number") {
+    if (mode === "apply") {
+      node.x = plan.x;
+      node.y = plan.y;
+    }
+    messages.push(`${mode === "preview" ? "预览：可" : "已"}按 Pixso 原始父级坐标归位到 (${plan.x}, ${plan.y})。`);
   }
   return messages;
 }
@@ -366,13 +395,22 @@ function componentRebuildDecision(source: MigrationNode, figmaNode: SceneNode, m
   return { eligible: true };
 }
 
+function canRebuildComponentAfterGroupConversion(source: MigrationNode, figmaNode: SceneNode, match: MatchResult): boolean {
+  return (
+    source.type === "COMPONENT" &&
+    figmaNode.type === "GROUP" &&
+    canSafelyRebuildMainComponent(source.type, "FRAME", match, hasForbiddenComponentAncestor(figmaNode))
+  );
+}
+
 function repairNode(
   source: MigrationNode,
   figmaNode: SceneNode,
   sourceChildren: MigrationNode[],
   sourceRectCoordinates: "local" | "absolute",
   match: MatchResult,
-  mode: RunMode
+  mode: RunMode,
+  geometryPlan?: GeometryRestorePlan
 ): RepairItem {
   const plan = createLayoutPlan(source, { children: sourceChildren });
   const compatibilityIssues = assessRecoveryCompatibility(source, {
@@ -382,13 +420,32 @@ function repairNode(
     mainComponentName: figmaNode.type === "INSTANCE" ? figmaNode.mainComponent?.name : undefined,
     hasImageFill: hasImageFill(figmaNode)
   });
+  if (typeof geometryPlan?.width === "number" && typeof geometryPlan.height === "number") {
+    const staleSizeWarning = compatibilityIssues.findIndex((issue) => issue.code === "size-mismatch");
+    if (staleSizeWarning >= 0) compatibilityIssues.splice(staleSizeWarning, 1);
+  }
   const componentMessages = componentInformation(source, figmaNode);
-  const componentDecision = componentRebuildDecision(source, figmaNode, match);
-  if (componentDecision.eligible) {
+  const initialComponentDecision = componentRebuildDecision(source, figmaNode, match);
+  const componentAfterConversion = canRebuildComponentAfterGroupConversion(source, figmaNode, match);
+  const componentSafe = initialComponentDecision.eligible || componentAfterConversion;
+  if (componentSafe) {
     const lostLinkWarning = compatibilityIssues.findIndex((issue) => issue.code === "component-link-lost");
     if (lostLinkWarning >= 0) compatibilityIssues.splice(lostLinkWarning, 1);
   }
-  const appearanceWork = hasRecoverableAppearance(source) && canApplyAppearance(figmaNode);
+  const appearancePreview =
+    hasRecoverableAppearance(source) && canApplyAppearance(figmaNode) ? applyAppearance(source, figmaNode, "preview") : [];
+  const operationPlan = createOperationExecutionPlan({
+    layoutRequested: plan.shouldApply,
+    layoutRisk: plan.riskLevel,
+    appearanceSafe: appearancePreview.length > 0,
+    componentSafe
+  });
+  const plannedChanges = [
+    ...(geometryPlan ? ["恢复坐标或尺寸"] : []),
+    ...(operationPlan.applyLayout ? ["恢复自动布局"] : []),
+    ...(operationPlan.applyAppearance ? ["恢复外观"] : []),
+    ...(operationPlan.applyComponent ? ["重建主 Component"] : [])
+  ];
   const blockingIssue = compatibilityIssues.some((issue) => issue.severity === "error");
   if (blockingIssue) {
     return {
@@ -396,49 +453,52 @@ function repairNode(
       nodeName: source.name,
       status: "failed",
       figmaNodeId: figmaNode.id,
+      plannedChanges: [],
+      appliedChanges: [],
       messages: [...compatibilityIssues.map((issue) => issue.message), ...componentMessages]
     };
   }
 
-  if (plan.riskLevel === "high") {
-    return {
-      migrationId: source.migrationId,
-      nodeName: source.name,
-      status: "partial",
-      figmaNodeId: figmaNode.id,
-      messages: [...plan.warnings, ...compatibilityIssues.map((issue) => issue.message), ...componentMessages, "高风险项默认跳过，未修改 Figma。"]
-    };
-  }
-
   const previewMessages = [
-    ...(plan.shouldApply ? ["预览：可执行安全的自动布局修复。"] : ["预览：没有可应用的自动布局属性。"]),
-    ...(appearanceWork ? ["预览：可安全恢复填充、描边或圆角。"] : []),
-    ...(componentDecision.eligible ? ["预览：可将唯一高置信普通 Frame 重建为主 Component。"] : []),
-    ...(componentDecision.message ? [componentDecision.message] : []),
+    ...(geometryPlan ? applyGeometryRestorePlan(figmaNode, geometryPlan, "preview") : []),
+    ...(operationPlan.applyLayout ? ["预览：将恢复安全的自动布局属性。"] : []),
+    ...appearancePreview.map((message) => `预览：将${message.replace(/^已/, "")}`),
+    ...(operationPlan.applyComponent ? ["预览：将重建唯一高置信主 Component。"] : []),
+    ...(operationPlan.needsReview ? ["布局风险较高：本轮只跳过布局，仍会独立执行安全外观和 Component 操作。"] : []),
+    ...(!componentSafe && initialComponentDecision.message ? [initialComponentDecision.message] : []),
     ...plan.warnings,
     ...compatibilityIssues.map((issue) => issue.message),
     ...componentMessages
   ];
   if (mode === "preview") {
+    const needsReview =
+      operationPlan.needsReview ||
+      plan.warnings.length > 0 ||
+      compatibilityIssues.length > 0 ||
+      Boolean(!componentSafe && initialComponentDecision.message);
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
-      status: plan.warnings.length || compatibilityIssues.length || Boolean(componentDecision.message) ? "partial" : "verified",
+      status: classifyPreviewStatus({ plannedChanges: plannedChanges.length, needsReview, blocked: false }),
       figmaNodeId: figmaNode.id,
+      plannedChanges,
+      appliedChanges: [],
       messages: previewMessages
     };
   }
 
-  if (!plan.shouldApply && !componentDecision.eligible && !appearanceWork) {
+  if (!plannedChanges.length) {
     writePluginMigrationId(figmaNode, source.migrationId);
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
-      status: compatibilityIssues.length || Boolean(componentDecision.message) ? "partial" : "verified",
+      status: compatibilityIssues.length || Boolean(initialComponentDecision.message) ? "partial" : "verified",
       figmaNodeId: figmaNode.id,
+      plannedChanges,
+      appliedChanges: [],
       messages: [
         ...compatibilityIssues.map((issue) => issue.message),
-        ...(componentDecision.message ? [componentDecision.message] : []),
+        ...(initialComponentDecision.message ? [initialComponentDecision.message] : []),
         ...componentMessages,
         "节点已匹配，但没有可安全应用的修改。"
       ]
@@ -449,65 +509,135 @@ function repairNode(
   let retainedBackground: RectangleNode | undefined;
   let promotedBackground = false;
   const messages: string[] = [];
-  if (componentDecision.eligible && layoutTarget.type === "FRAME") {
-    layoutTarget = figma.createComponentFromNode(layoutTarget);
-    messages.push("已将唯一高置信普通 Frame 重建为主 Component。");
+  const appliedChanges: string[] = [];
+  const failedStep = (step: string, error: unknown): RepairItem => ({
+    migrationId: source.migrationId,
+    nodeName: source.name,
+    status: classifyApplyFailureStatus(appliedChanges.length),
+    figmaNodeId: layoutTarget.id,
+    plannedChanges,
+    appliedChanges: [...appliedChanges],
+    messages: [
+      ...messages,
+      ...(appliedChanges.length ? [`已完成：${appliedChanges.join("、")}。`] : []),
+      `${step}失败：${describeError(error)}`,
+      "可以使用 Figma Undo 回退本轮已执行的修改。"
+    ]
+  });
+
+  if (geometryPlan) {
+    try {
+      messages.push(...applyGeometryRestorePlan(layoutTarget, geometryPlan, "apply"));
+      appliedChanges.push("坐标或尺寸恢复");
+    } catch (error) {
+      return failedStep("坐标或尺寸恢复", error);
+    }
   }
-  if (figmaNode.type === "GROUP") {
-    const converted = convertGroupToFrame(figmaNode);
-    if (converted) {
+
+  const needsGroupConversion = figmaNode.type === "GROUP" && (operationPlan.applyLayout || operationPlan.applyComponent);
+  if (needsGroupConversion && figmaNode.type === "GROUP") {
+    try {
+      const converted = convertGroupToFrame(figmaNode);
+      if (!converted) return failedStep("Group 转 Frame", "当前 Group 无法安全转换");
       layoutTarget = converted.frame;
       retainedBackground = converted.retainedBackground;
       promotedBackground = converted.promotedBackground;
       const scopeIndex = launchSelectionIds.indexOf(figmaNode.id);
       if (scopeIndex >= 0) launchSelectionIds[scopeIndex] = converted.frame.id;
       messages.push("已将 Sketch 导入的 Group 原位转换为 Frame。", converted.message);
+      appliedChanges.push("Group 转 Frame");
       const boundsMessage = restoreConvertedFrameBounds(converted.frame, source, sourceRectCoordinates);
       if (boundsMessage) messages.push(boundsMessage);
+    } catch (error) {
+      return failedStep("Group 转 Frame", error);
     }
   }
-  if (plan.shouldApply && !canAutoLayout(layoutTarget)) {
+
+  const finalComponentDecision = componentRebuildDecision(source, layoutTarget, match);
+  if (operationPlan.applyComponent) {
+    if (!finalComponentDecision.eligible || layoutTarget.type !== "FRAME") {
+      messages.push(finalComponentDecision.message ?? "主 Component 未重建：转换后的节点不满足安全条件。");
+    } else {
+      try {
+        const previousId = layoutTarget.id;
+        layoutTarget = figma.createComponentFromNode(layoutTarget);
+        const scopeIndex = launchSelectionIds.indexOf(previousId);
+        if (scopeIndex >= 0) launchSelectionIds[scopeIndex] = layoutTarget.id;
+        messages.push("已将唯一高置信普通 Frame 重建为主 Component。");
+        appliedChanges.push("主 Component 重建");
+      } catch (error) {
+        return failedStep("主 Component 重建", error);
+      }
+    }
+  }
+
+  if (operationPlan.applyLayout && !canAutoLayout(layoutTarget)) {
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
-      status: "failed",
+      status: appliedChanges.length ? "partial" : "failed",
       figmaNodeId: layoutTarget.id,
-      messages: [...compatibilityIssues.map((issue) => issue.message), "目标节点不支持自动布局，未应用任何修改。"]
+      plannedChanges,
+      appliedChanges,
+      messages: [...messages, ...compatibilityIssues.map((issue) => issue.message), "目标节点不支持自动布局。", "可以使用 Figma Undo 回退本轮已执行的修改。"]
     };
   }
 
-  if (plan.shouldApply && canAutoLayout(layoutTarget)) {
-    const layoutModeOperation = plan.operations.find((operation) => operation.property === "layoutMode");
-    if (layoutModeOperation) {
-      if (retainedBackground) {
-        protectRetainedBackgroundBeforeLayout(retainedBackground, () =>
-          applyOperation(layoutTarget as FrameNode | ComponentNode | InstanceNode, layoutModeOperation.property, layoutModeOperation.value)
-        );
-      } else {
-        applyOperation(layoutTarget, layoutModeOperation.property, layoutModeOperation.value);
+  if (operationPlan.applyLayout && canAutoLayout(layoutTarget)) {
+    try {
+      const layoutModeOperation = plan.operations.find((operation) => operation.property === "layoutMode");
+      if (layoutModeOperation) {
+        if (retainedBackground) {
+          protectRetainedBackgroundBeforeLayout(retainedBackground, () =>
+            applyOperation(layoutTarget as FrameNode | ComponentNode | InstanceNode, layoutModeOperation.property, layoutModeOperation.value)
+          );
+        } else {
+          applyOperation(layoutTarget, layoutModeOperation.property, layoutModeOperation.value);
+        }
+        appliedChanges.push(`自动布局:${layoutModeOperation.property}`);
       }
+      for (const operation of plan.operations) {
+        if (operation === layoutModeOperation) continue;
+        applyOperation(layoutTarget, operation.property, operation.value);
+        appliedChanges.push(`自动布局:${operation.property}`);
+      }
+      messages.push("已恢复自动布局方向、Padding、Gap 和安全尺寸模式。");
+    } catch (error) {
+      return failedStep("自动布局恢复", error);
     }
-    for (const operation of plan.operations) {
-      if (operation !== layoutModeOperation) applyOperation(layoutTarget, operation.property, operation.value);
-    }
+  } else if (operationPlan.needsReview) {
+    messages.push(...plan.warnings, "已跳过高风险布局修复；安全外观和 Component 操作仍独立执行。");
   }
 
   if (canApplyAppearance(layoutTarget) && hasRecoverableAppearance(source) && !promotedBackground) {
-    messages.push(...applyAppearance(source, layoutTarget));
+    const appearanceChanges = applyAppearance(source, layoutTarget, "preview");
+    if (appearanceChanges.length) {
+      try {
+        messages.push(...applyAppearance(source, layoutTarget, "apply"));
+        appliedChanges.push("外观恢复");
+      } catch (error) {
+        return failedStep("外观恢复", error);
+      }
+    }
   }
-  if (!componentDecision.eligible && componentDecision.message) {
-    messages.push(componentDecision.message);
+  if (!componentSafe && initialComponentDecision.message) {
+    messages.push(initialComponentDecision.message);
   }
   writePluginMigrationId(layoutTarget, source.migrationId);
-  plan.warnings.push(...compatibilityIssues.map((issue) => issue.message));
-
-  const didModify = plan.shouldApply || componentDecision.eligible || messages.some((message) => message.startsWith("已"));
+  const reviewMessages = [
+    ...(operationPlan.needsReview ? plan.warnings : []),
+    ...compatibilityIssues.map((issue) => issue.message),
+    ...componentMessages
+  ];
+  const needsReview = operationPlan.needsReview || reviewMessages.length > 0 || Boolean(operationPlan.applyComponent && !finalComponentDecision.eligible);
   return {
     migrationId: source.migrationId,
     nodeName: source.name,
-    status: plan.warnings.length ? "partial" : didModify ? "modified" : "verified",
+    status: needsReview ? "partial" : appliedChanges.length ? "modified" : "verified",
     figmaNodeId: layoutTarget.id,
-    messages: [...messages, ...plan.warnings, ...componentMessages]
+    plannedChanges,
+    appliedChanges,
+    messages: [...messages, ...reviewMessages]
   };
 }
 
@@ -531,6 +661,7 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
   const normalized = normalizeFlattenedRoot(map.nodes, candidates);
   const matches = matchNodes(normalized.nodes, normalized.candidates);
   const sourceById = new Map(normalized.nodes.map((node) => [node.migrationId, node]));
+  const matchBySourceId = new Map(matches.map((match) => [match.migrationId, match]));
   const sourceRectCoordinates = normalized.flattenedRoot ? "absolute" : "local";
   const results: RepairItem[] = [];
 
@@ -539,7 +670,9 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
       migrationId: normalized.flattenedRoot.migrationId,
       nodeName: normalized.flattenedRoot.name,
       status: "verified",
-      messages: ["Sketch 已将最外层画板展平；已按原始画板坐标修正其直接子节点的匹配位置。"]
+      plannedChanges: [],
+      appliedChanges: [],
+      messages: ["Sketch 已将最外层画板展平；原始绝对坐标仅用于匹配，展平场景暂不自动写回局部坐标。"]
     });
   }
 
@@ -551,6 +684,8 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
         migrationId: source.migrationId,
         nodeName: source.name,
         status: match.status === "ambiguous" ? "partial" : "failed",
+        plannedChanges: [],
+        appliedChanges: [],
         messages: [
           `节点${matchStatusLabels[match.status]}（匹配分数 ${match.score.toFixed(2)}），依据：${match.reasons.map((reason) => reasonLabels[reason] ?? reason).join("、") || "无"}。`
         ]
@@ -559,7 +694,14 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
     }
     const figmaNode = figma.getNodeById(match.candidateId);
     if (!figmaNode || !("type" in figmaNode)) {
-      results.push({ migrationId: source.migrationId, nodeName: source.name, status: "failed", messages: ["匹配到的节点已不存在。"] });
+      results.push({
+        migrationId: source.migrationId,
+        nodeName: source.name,
+        status: "failed",
+        plannedChanges: [],
+        appliedChanges: [],
+        messages: ["匹配到的节点已不存在。"]
+      });
       continue;
     }
     try {
@@ -567,7 +709,15 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
         const child = sourceById.get(id);
         return child ? [child] : [];
       });
-      results.push(repairNode(source, figmaNode as SceneNode, sourceChildren, sourceRectCoordinates, match, mode));
+      const sceneNode = figmaNode as SceneNode;
+      const sourceParent = source.parentMigrationId ? sourceById.get(source.parentMigrationId) : undefined;
+      const parentMatch = sourceParent ? matchBySourceId.get(sourceParent.migrationId) : undefined;
+      const geometryPlan = createSafeGeometryRestorePlan(source, sourceParent, match, localRect(sceneNode), {
+        parentCandidateMatched: Boolean(parentMatch?.candidateId && sceneNode.parent?.id === parentMatch.candidateId),
+        coordinates: sourceRectCoordinates,
+        canResizeRoot: canResizeWithoutConstraints(sceneNode)
+      });
+      results.push(repairNode(source, sceneNode, sourceChildren, sourceRectCoordinates, match, mode, geometryPlan));
     } catch (error) {
       console.error(`修复节点失败：${source.name} (${source.migrationId})`, error);
       results.push({
@@ -575,7 +725,9 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
         nodeName: source.name,
         status: "failed",
         figmaNodeId: figmaNode.id,
-        messages: [`修复执行失败：${describeError(error)}`]
+        plannedChanges: [],
+        appliedChanges: [],
+        messages: [`修复执行失败：${describeError(error)}`, "可以使用 Figma Undo 回退本轮已执行的修改。"]
       });
     }
   }

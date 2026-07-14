@@ -19,9 +19,12 @@
 - Capability reports recursively inspect the selected subtree and include per-field coverage plus non-sensitive layout samples.
 - Capability probing checks `layoutPositioning`, `layoutAlign`, `layoutGrow`, `isAbsolute`, and `ignoreAutoLayout`. When overlapping children are found and positioning cannot be confirmed, Auto Layout is skipped and reported as partial.
 - Image-filled Pixso nodes are classified as images before rectangle/vector type mapping. Image summaries include fill count, scale modes, opacity, blend mode, available hashes, and transform presence.
-- Batched exports retain each root's original page or selection index in both `originalIndex` and its root path.
-- Figma provides a read-only preview stage and a separate safe-repair stage. High-risk items are skipped by default.
+- Selection and artboard exports prefer each root's real index in `currentPage.children`. `indexSource` records `page`, `selection`, or `unknown`; selection-order fallback adds a warning because indexed paths are less trustworthy.
+- Figma provides a read-only preview stage and a separate safe-repair stage. Preview counts separately report nodes that will change, need no change, need review, or are blocked.
+- Layout, appearance, and Component risk are evaluated independently. Unknown overlaps or absolute positioning skip only Auto Layout; safe appearance and uniquely matched main Component work can still run and the node is reported as partial.
+- Each repair result includes `plannedChanges` and `appliedChanges`. A later failure after an earlier mutation returns partial, identifies the failed step, and tells the user that Figma Undo can revert the run.
 - Retained complex background rectangles are made absolute before `layoutMode` is set, then restored to their saved local position.
+- Retained backgrounds are confirmed as absolute again after `layoutMode` for runtimes that ignore or reject the first write. A promoted bottom rectangle is not overwritten by the source Group's empty appearance.
 - Main Components are rebuilt only when a source Component has a unique high-confidence match to an ordinary Figma Frame. Instance candidates are reported but not rebound automatically.
 
 ## Must Be Verified In User Pixso Deployment
@@ -47,6 +50,7 @@
 - When Sketch removes a Pixso frame's transparent outer bounds, Group-to-Frame conversion now restores the Pixso position and size before applying Auto Layout. This is intended to prevent padding from shifting the whole component.
 - A run against a file already changed by earlier plugin versions is diagnostic only. It cannot be used as the 80%-90% visual acceptance result because prior Auto Layout changes have already moved repeated nodes away from their original matching coordinates.
 - Final acceptance requires a clean Sketch import, a first repair run, and side-by-side Pixso/Figma screenshots with selection outlines cleared.
+- High-confidence static children now recover their Pixso local coordinates when their matched parent has no Auto Layout. Root artboards recover source width and height without moving their Figma canvas position; text boxes are not force-resized.
 
 ## Known Limits
 
@@ -58,3 +62,9 @@
 - Page export requires the private deployment to expose `currentPage.children`; otherwise the plugin reports the capability gap.
 - Cancellation is checked between root-node batches. A single very large artboard still completes its current batch before stopping.
 - Variables, variants, constraints, and prototypes are not fully restored in V1.
+
+## Roadmap Only
+
+- Icon-specific Group-to-Frame conversion.
+- Scanning for unreferenced master components.
+- Automatic instance replacement or rebinding.

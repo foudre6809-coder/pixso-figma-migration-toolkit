@@ -18,6 +18,13 @@ export interface MatchResult {
   reasons: string[];
 }
 
+export interface GeometryRestorePlan {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
 export function isHighConfidenceUniqueMatch(match: MatchResult): boolean {
   if (match.status !== "matched" || !match.candidateId) return false;
   if (match.reasons.includes("migrationId")) return true;
@@ -27,6 +34,35 @@ export function isHighConfidenceUniqueMatch(match: MatchResult): boolean {
     match.reasons.includes("type") &&
     (match.reasons.includes("path") || match.reasons.includes("rect"))
   );
+}
+
+export function createSafeGeometryRestorePlan(
+  node: MigrationNode,
+  parent: MigrationNode | undefined,
+  match: MatchResult,
+  candidateRect: Rect | undefined,
+  options: {
+    parentCandidateMatched: boolean;
+    coordinates: "local" | "absolute";
+    canResizeRoot: boolean;
+  }
+): GeometryRestorePlan | undefined {
+  const sourceRect = node.rect.value;
+  if (!sourceRect || !candidateRect || !isHighConfidenceUniqueMatch(match)) return undefined;
+
+  if (!parent) {
+    if (!options.canResizeRoot) return undefined;
+    const widthChanged = Math.abs(sourceRect.width - candidateRect.width) > 0.5;
+    const heightChanged = Math.abs(sourceRect.height - candidateRect.height) > 0.5;
+    return widthChanged || heightChanged ? { width: sourceRect.width, height: sourceRect.height } : undefined;
+  }
+
+  if (options.coordinates !== "local" || !options.parentCandidateMatched || parent.layout.mode.value !== "NONE") {
+    return undefined;
+  }
+  const xChanged = Math.abs(sourceRect.x - candidateRect.x) > 0.5;
+  const yChanged = Math.abs(sourceRect.y - candidateRect.y) > 0.5;
+  return xChanged || yChanged ? { x: sourceRect.x, y: sourceRect.y } : undefined;
 }
 
 export function canSafelyRebuildMainComponent(

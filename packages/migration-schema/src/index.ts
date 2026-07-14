@@ -69,6 +69,7 @@ export const MigrationNodeSchema = z.object({
   migrationId: z.string().min(1),
   originalId: z.string().optional(),
   originalIndex: z.number().int().nonnegative().optional(),
+  indexSource: z.enum(["page", "selection", "unknown"]).optional(),
   name: z.string(),
   type: NodeTypeSchema,
   path: z.array(z.string()),

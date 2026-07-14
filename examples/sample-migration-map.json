@@ -12,6 +12,8 @@
     {
       "migrationId": "pxm_button_primary",
       "originalId": "1:2",
+      "originalIndex": 0,
+      "indexSource": "page",
       "name": "Button/Primary",
       "type": "COMPONENT",
       "path": ["Design System[0]", "Button/Primary[0]"],

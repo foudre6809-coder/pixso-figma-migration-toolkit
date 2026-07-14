@@ -75,25 +75,44 @@ interface GroupConversion {
   retainedBackground?: RectangleNode;
 }
 
+function describeError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "未知错误";
+  }
+}
+
 function hasOnlySolidFills(node: RectangleNode): boolean {
   return node.fills !== figma.mixed && node.fills.every((fill) => fill.type === "SOLID");
 }
 
-function copyRectangleAppearanceToFrame(rectangle: RectangleNode, frame: FrameNode): void {
-  if (rectangle.fills !== figma.mixed) frame.fills = rectangle.fills;
-  frame.strokes = rectangle.strokes;
-  if (typeof rectangle.strokeWeight === "number") frame.strokeWeight = rectangle.strokeWeight;
-  frame.strokeAlign = rectangle.strokeAlign;
-  frame.dashPattern = rectangle.dashPattern;
-  frame.effects = rectangle.effects;
-  frame.cornerSmoothing = rectangle.cornerSmoothing;
-  if (typeof rectangle.cornerRadius === "number") {
-    frame.cornerRadius = rectangle.cornerRadius;
-  } else {
-    frame.topLeftRadius = rectangle.topLeftRadius;
-    frame.topRightRadius = rectangle.topRightRadius;
-    frame.bottomRightRadius = rectangle.bottomRightRadius;
-    frame.bottomLeftRadius = rectangle.bottomLeftRadius;
+function tryCopyRectangleAppearanceToFrame(rectangle: RectangleNode, frame: FrameNode): string | undefined {
+  try {
+    if (rectangle.fills !== figma.mixed) frame.fills = rectangle.fills;
+    frame.strokes = rectangle.strokes;
+    if (typeof rectangle.strokeWeight === "number") frame.strokeWeight = rectangle.strokeWeight;
+    frame.strokeAlign = rectangle.strokeAlign;
+    frame.dashPattern = rectangle.dashPattern;
+    frame.effects = rectangle.effects;
+    frame.cornerSmoothing = rectangle.cornerSmoothing;
+    if (typeof rectangle.cornerRadius === "number") {
+      frame.cornerRadius = rectangle.cornerRadius;
+    } else {
+      frame.topLeftRadius = rectangle.topLeftRadius;
+      frame.topRightRadius = rectangle.topRightRadius;
+      frame.bottomRightRadius = rectangle.bottomRightRadius;
+      frame.bottomLeftRadius = rectangle.bottomLeftRadius;
+    }
+    return undefined;
+  } catch (error) {
+    frame.fills = [];
+    frame.strokes = [];
+    frame.effects = [];
+    frame.cornerRadius = 0;
+    return describeError(error);
   }
 }
 
@@ -104,7 +123,7 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
   const originalChildren = [...group.children];
   const bottomChild = originalChildren[0];
   const background = bottomChild?.type === "RECTANGLE" ? bottomChild : undefined;
-  const backgroundClassification = background
+  let backgroundClassification = background
     ? classifyBackgroundRectangle(
         {
           type: background.type,
@@ -125,39 +144,56 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
       )
     : "none";
   const index = parent.children.indexOf(group);
+  const groupLocked = group.locked;
   const frame = figma.createFrame();
-  frame.name = group.name;
-  frame.x = group.x;
-  frame.y = group.y;
-  frame.resizeWithoutConstraints(group.width, group.height);
-  frame.fills = [];
-  frame.clipsContent = false;
-  frame.opacity = group.opacity;
-  frame.blendMode = group.blendMode;
-  frame.visible = group.visible;
-  frame.locked = group.locked;
-  parent.insertChild(index, frame);
+  let promotionError: string | undefined;
+  try {
+    frame.name = group.name;
+    frame.x = group.x;
+    frame.y = group.y;
+    frame.resizeWithoutConstraints(group.width, group.height);
+    frame.fills = [];
+    frame.clipsContent = false;
+    frame.opacity = group.opacity;
+    frame.blendMode = group.blendMode;
+    frame.visible = group.visible;
+    parent.insertChild(index, frame);
 
-  if (background && backgroundClassification === "promote") {
-    copyRectangleAppearanceToFrame(background, frame);
-  }
-
-  for (const child of originalChildren) {
-    if (child === background && backgroundClassification === "promote") {
-      child.remove();
-      continue;
+    if (background && backgroundClassification === "promote") {
+      promotionError = tryCopyRectangleAppearanceToFrame(background, frame);
+      if (promotionError) backgroundClassification = "retain";
     }
-    const { x, y } = child;
-    frame.appendChild(child);
-    child.x = x;
-    child.y = y;
+
+    for (const child of originalChildren) {
+      if (child === background && backgroundClassification === "promote") continue;
+      const { x, y } = child;
+      frame.appendChild(child);
+      child.x = x;
+      child.y = y;
+    }
+    if (background && backgroundClassification === "promote") background.remove();
+    group.remove();
+    frame.locked = groupLocked;
+  } catch (error) {
+    if (!group.removed) {
+      for (const [childIndex, child] of originalChildren.entries()) {
+        if (child.removed || child.parent === group) continue;
+        const { x, y } = child;
+        group.insertChild(Math.min(childIndex, group.children.length), child);
+        child.x = x;
+        child.y = y;
+      }
+    }
+    if (!frame.removed) frame.remove();
+    throw error;
   }
-  group.remove();
   const message =
     backgroundClassification === "promote"
       ? "已将 Group 的纯色底图矩形外观迁移到 Frame。"
       : backgroundClassification === "retain"
-        ? "底图包含复杂属性，已保留为绝对定位图层，Frame 保持透明。"
+        ? promotionError
+          ? `底图外观无法安全迁移，已保留为绝对定位图层：${promotionError}`
+          : "底图包含复杂属性，已保留为绝对定位图层，Frame 保持透明。"
         : "未发现可确认的底图矩形，已保留原图层，Frame 保持透明。";
   return {
     frame,
@@ -268,7 +304,18 @@ function repairFromJson(json: string): RepairItem[] {
       results.push({ migrationId: source.migrationId, nodeName: source.name, status: "failed", messages: ["匹配到的节点已不存在。"] });
       continue;
     }
-    results.push(repairNode(source, figmaNode as SceneNode));
+    try {
+      results.push(repairNode(source, figmaNode as SceneNode));
+    } catch (error) {
+      console.error(`修复节点失败：${source.name} (${source.migrationId})`, error);
+      results.push({
+        migrationId: source.migrationId,
+        nodeName: source.name,
+        status: "failed",
+        figmaNodeId: figmaNode.id,
+        messages: [`修复执行失败：${describeError(error)}`]
+      });
+    }
   }
   return results;
 }
@@ -283,7 +330,7 @@ figma.ui.onmessage = (message: { type: string; json?: string; nodeId?: string })
       figma.notify(`迁移修复完成：已检查 ${results.length} 个节点。`);
     } catch (error) {
       console.error(error);
-      figma.ui.postMessage({ type: "error", message: "迁移数据无效或版本不兼容，请重新从 Pixso 导出。" });
+      figma.ui.postMessage({ type: "error", message: `无法开始修复：${describeError(error)}` });
     }
   }
   if (message.type === "select" && message.nodeId) {

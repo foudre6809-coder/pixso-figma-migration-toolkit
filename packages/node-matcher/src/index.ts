@@ -123,11 +123,17 @@ export function assessRecoveryCompatibility(node: MigrationNode, candidate: Reco
   const issues: RecoveryIssue[] = [];
 
   if (node.type === "COMPONENT" && candidate.type !== "COMPONENT") {
-    issues.push({ code: "component-type-mismatch", severity: "error", message: "组件匹配到了非组件节点，已跳过转换。" });
+    if (candidate.type === "GROUP" || candidate.type === "FRAME") {
+      issues.push({ code: "component-link-lost", severity: "warning", message: "组件关系已在 Sketch 导入时丢失，本次仅恢复布局。" });
+    } else {
+      issues.push({ code: "component-type-mismatch", severity: "error", message: "组件匹配到了不兼容节点，已跳过转换。" });
+    }
   }
   if (node.type === "INSTANCE") {
-    if (candidate.type !== "INSTANCE") {
-      issues.push({ code: "instance-type-mismatch", severity: "error", message: "实例匹配到了非实例节点，已跳过重新绑定。" });
+    if (candidate.type === "GROUP" || candidate.type === "FRAME") {
+      issues.push({ code: "instance-link-lost", severity: "warning", message: "实例关系已在 Sketch 导入时丢失，本次仅恢复布局。" });
+    } else if (candidate.type !== "INSTANCE") {
+      issues.push({ code: "instance-type-mismatch", severity: "error", message: "实例匹配到了不兼容节点，已跳过重新绑定。" });
     } else if (node.component.instanceOf.value && candidate.mainComponentName !== node.component.instanceOf.value) {
       issues.push({ code: "instance-rebind-required", severity: "warning", message: "无法确认实例的主组件，因此未重新绑定。" });
     }

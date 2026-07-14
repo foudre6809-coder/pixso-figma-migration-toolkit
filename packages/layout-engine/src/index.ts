@@ -7,6 +7,54 @@ export interface LayoutPlan {
   warnings: string[];
 }
 
+export interface BackgroundRectangleCandidate {
+  type: string;
+  index: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+  isMask: boolean;
+  rotation: number;
+  opacity: number;
+  blendMode: string;
+  hasOnlySolidFills: boolean;
+}
+
+export type BackgroundRectangleClassification = "promote" | "retain" | "none";
+
+function approximatelyEqual(left: number, right: number, tolerance: number): boolean {
+  return Math.abs(left - right) <= tolerance;
+}
+
+export function classifyBackgroundRectangle(
+  candidate: BackgroundRectangleCandidate,
+  containerWidth: number,
+  containerHeight: number,
+  tolerance = 1
+): BackgroundRectangleClassification {
+  const coversContainer =
+    candidate.type === "RECTANGLE" &&
+    candidate.index === 0 &&
+    candidate.visible &&
+    !candidate.isMask &&
+    approximatelyEqual(candidate.x, 0, tolerance) &&
+    approximatelyEqual(candidate.y, 0, tolerance) &&
+    approximatelyEqual(candidate.width, containerWidth, tolerance) &&
+    approximatelyEqual(candidate.height, containerHeight, tolerance);
+
+  if (!coversContainer) return "none";
+
+  const canPromote =
+    approximatelyEqual(candidate.rotation, 0, 0.01) &&
+    approximatelyEqual(candidate.opacity, 1, 0.001) &&
+    candidate.blendMode === "NORMAL" &&
+    candidate.hasOnlySolidFills;
+
+  return canPromote ? "promote" : "retain";
+}
+
 function hasNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }

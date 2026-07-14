@@ -26,6 +26,7 @@
 - Offline matching resolved all 252 nodes after frame/group compatibility and indexed hierarchy matching were added.
 - The sample exposed geometry for all nodes, but did not expose recoverable Auto Layout values; this remains a Pixso API capability limit rather than a matcher failure.
 - Figma results distinguish actual modifications from nodes that were only matched and verified, so zero-change runs are not reported as successful repairs.
+- Sketch-imported groups with recoverable layout data are converted in place before Auto Layout is applied. A plain full-size bottom rectangle is promoted to the Frame's fills, strokes, corners, and effects; complex backgrounds remain as absolute-positioned child layers; uncertain backgrounds remain untouched. Lost component links remain explicitly reported.
 
 ## Known Limits
 

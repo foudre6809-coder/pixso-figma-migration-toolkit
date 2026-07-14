@@ -1,4 +1,4 @@
-import { createLayoutPlan } from "@pixso-figma-migration/layout-engine";
+import { classifyBackgroundRectangle, createLayoutPlan } from "@pixso-figma-migration/layout-engine";
 import { type MigrationNode, validateMigrationMap } from "@pixso-figma-migration/migration-schema";
 import { assessRecoveryCompatibility, type MatchCandidate, matchNodes } from "@pixso-figma-migration/node-matcher";
 
@@ -69,6 +69,103 @@ function canAutoLayout(node: SceneNode): node is FrameNode | ComponentNode | Ins
   return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE";
 }
 
+interface GroupConversion {
+  frame: FrameNode;
+  message: string;
+  retainedBackground?: RectangleNode;
+}
+
+function hasOnlySolidFills(node: RectangleNode): boolean {
+  return node.fills !== figma.mixed && node.fills.every((fill) => fill.type === "SOLID");
+}
+
+function copyRectangleAppearanceToFrame(rectangle: RectangleNode, frame: FrameNode): void {
+  if (rectangle.fills !== figma.mixed) frame.fills = rectangle.fills;
+  frame.strokes = rectangle.strokes;
+  if (typeof rectangle.strokeWeight === "number") frame.strokeWeight = rectangle.strokeWeight;
+  frame.strokeAlign = rectangle.strokeAlign;
+  frame.dashPattern = rectangle.dashPattern;
+  frame.effects = rectangle.effects;
+  frame.cornerSmoothing = rectangle.cornerSmoothing;
+  if (typeof rectangle.cornerRadius === "number") {
+    frame.cornerRadius = rectangle.cornerRadius;
+  } else {
+    frame.topLeftRadius = rectangle.topLeftRadius;
+    frame.topRightRadius = rectangle.topRightRadius;
+    frame.bottomRightRadius = rectangle.bottomRightRadius;
+    frame.bottomLeftRadius = rectangle.bottomLeftRadius;
+  }
+}
+
+function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
+  const parent = group.parent;
+  if (!parent || !("children" in parent) || !("insertChild" in parent) || group.rotation !== 0) return undefined;
+
+  const originalChildren = [...group.children];
+  const bottomChild = originalChildren[0];
+  const background = bottomChild?.type === "RECTANGLE" ? bottomChild : undefined;
+  const backgroundClassification = background
+    ? classifyBackgroundRectangle(
+        {
+          type: background.type,
+          index: 0,
+          x: background.x,
+          y: background.y,
+          width: background.width,
+          height: background.height,
+          visible: background.visible,
+          isMask: background.isMask,
+          rotation: background.rotation,
+          opacity: background.opacity,
+          blendMode: background.blendMode,
+          hasOnlySolidFills: hasOnlySolidFills(background)
+        },
+        group.width,
+        group.height
+      )
+    : "none";
+  const index = parent.children.indexOf(group);
+  const frame = figma.createFrame();
+  frame.name = group.name;
+  frame.x = group.x;
+  frame.y = group.y;
+  frame.resizeWithoutConstraints(group.width, group.height);
+  frame.fills = [];
+  frame.clipsContent = false;
+  frame.opacity = group.opacity;
+  frame.blendMode = group.blendMode;
+  frame.visible = group.visible;
+  frame.locked = group.locked;
+  parent.insertChild(index, frame);
+
+  if (background && backgroundClassification === "promote") {
+    copyRectangleAppearanceToFrame(background, frame);
+  }
+
+  for (const child of originalChildren) {
+    if (child === background && backgroundClassification === "promote") {
+      child.remove();
+      continue;
+    }
+    const { x, y } = child;
+    frame.appendChild(child);
+    child.x = x;
+    child.y = y;
+  }
+  group.remove();
+  const message =
+    backgroundClassification === "promote"
+      ? "已将 Group 的纯色底图矩形外观迁移到 Frame。"
+      : backgroundClassification === "retain"
+        ? "底图包含复杂属性，已保留为绝对定位图层，Frame 保持透明。"
+        : "未发现可确认的底图矩形，已保留原图层，Frame 保持透明。";
+  return {
+    frame,
+    message,
+    retainedBackground: backgroundClassification === "retain" ? background : undefined
+  };
+}
+
 function applyOperation(node: FrameNode | ComponentNode | InstanceNode, property: string, value: string | number): void {
   if (property === "layoutMode" && (value === "HORIZONTAL" || value === "VERTICAL")) node.layoutMode = value;
   if (property === "paddingTop" && typeof value === "number") node.paddingTop = value;
@@ -108,25 +205,37 @@ function repairNode(source: MigrationNode, figmaNode: SceneNode): RepairItem {
       messages: [...compatibilityIssues.map((issue) => issue.message), "节点已匹配，但迁移数据中没有可应用的布局属性，仅完成一致性检查。"]
     };
   }
-  if (!canAutoLayout(figmaNode)) {
+  let layoutTarget: SceneNode = figmaNode;
+  let retainedBackground: RectangleNode | undefined;
+  const messages: string[] = [];
+  if (figmaNode.type === "GROUP") {
+    const converted = convertGroupToFrame(figmaNode);
+    if (converted) {
+      layoutTarget = converted.frame;
+      retainedBackground = converted.retainedBackground;
+      messages.push("已将 Sketch 导入的 Group 原位转换为 Frame。", converted.message);
+    }
+  }
+  if (!canAutoLayout(layoutTarget)) {
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
       status: "failed",
-      figmaNodeId: figmaNode.id,
+      figmaNodeId: layoutTarget.id,
       messages: [...compatibilityIssues.map((issue) => issue.message), "目标节点不支持自动布局，未应用任何修改。"]
     };
   }
 
-  for (const operation of plan.operations) applyOperation(figmaNode, operation.property, operation.value);
+  for (const operation of plan.operations) applyOperation(layoutTarget, operation.property, operation.value);
+  if (retainedBackground) retainedBackground.layoutPositioning = "ABSOLUTE";
   plan.warnings.push(...compatibilityIssues.map((issue) => issue.message));
 
   return {
     migrationId: source.migrationId,
     nodeName: source.name,
     status: plan.warnings.length ? "partial" : "modified",
-    figmaNodeId: figmaNode.id,
-    messages: plan.warnings
+    figmaNodeId: layoutTarget.id,
+    messages: [...messages, ...plan.warnings]
   };
 }
 

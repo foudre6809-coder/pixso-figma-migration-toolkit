@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { native, unavailable, type MigrationNode } from "../packages/migration-schema/src";
 import { assessRecoveryCompatibility, matchNodes } from "../packages/node-matcher/src";
-import { createLayoutPlan } from "../packages/layout-engine/src";
+import { classifyBackgroundRectangle, createLayoutPlan } from "../packages/layout-engine/src";
 
 function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
   return {
@@ -164,6 +164,35 @@ describe("node matcher", () => {
 });
 
 describe("layout engine", () => {
+  const backgroundCandidate = {
+    type: "RECTANGLE",
+    index: 0,
+    x: 0,
+    y: 0,
+    width: 200,
+    height: 80,
+    visible: true,
+    isMask: false,
+    rotation: 0,
+    opacity: 1,
+    blendMode: "NORMAL",
+    hasOnlySolidFills: true
+  };
+
+  it("promotes a plain bottom rectangle that covers the group", () => {
+    expect(classifyBackgroundRectangle(backgroundCandidate, 200, 80)).toBe("promote");
+  });
+
+  it("retains a full-size complex background as a child layer", () => {
+    expect(classifyBackgroundRectangle({ ...backgroundCandidate, hasOnlySolidFills: false }, 200, 80)).toBe("retain");
+    expect(classifyBackgroundRectangle({ ...backgroundCandidate, opacity: 0.5 }, 200, 80)).toBe("retain");
+  });
+
+  it("does not treat an inset or non-bottom rectangle as a background", () => {
+    expect(classifyBackgroundRectangle({ ...backgroundCandidate, x: 8 }, 200, 80)).toBe("none");
+    expect(classifyBackgroundRectangle({ ...backgroundCandidate, index: 1 }, 200, 80)).toBe("none");
+  });
+
   it("creates Figma auto layout operations from migration data", () => {
     const plan = createLayoutPlan(node());
 
@@ -215,10 +244,16 @@ describe("layout engine", () => {
 });
 
 describe("recovery diagnostics", () => {
-  it("blocks unsafe component conversion", () => {
-    const issues = assessRecoveryCompatibility(node(), { type: "FRAME" });
+  it("blocks unsafe component conversion to an incompatible node", () => {
+    const issues = assessRecoveryCompatibility(node(), { type: "VECTOR" });
 
     expect(issues).toContainEqual(expect.objectContaining({ code: "component-type-mismatch", severity: "error" }));
+  });
+
+  it("allows layout-only recovery when a component imports as a group", () => {
+    const issues = assessRecoveryCompatibility(node(), { type: "GROUP" });
+
+    expect(issues).toContainEqual(expect.objectContaining({ code: "component-link-lost", severity: "warning" }));
   });
 
   it("reports an instance whose main component cannot be verified", () => {

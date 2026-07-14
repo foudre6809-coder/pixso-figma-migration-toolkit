@@ -25,6 +25,16 @@ export const SolidPaintSchema = z.object({
   opacity: z.number().min(0).max(1)
 });
 
+export const ImageFillSummarySchema = z.object({
+  count: z.number().int().nonnegative(),
+  scaleModes: z.array(z.string()),
+  opacities: z.array(z.number().min(0).max(1)),
+  blendModes: z.array(z.string()),
+  hashes: z.array(z.string()),
+  hasTransform: z.boolean()
+});
+export type ImageFillSummary = z.infer<typeof ImageFillSummarySchema>;
+
 const emptyAppearance = {
   fill: { value: null, source: "unavailable" as const },
   stroke: { value: null, source: "unavailable" as const },
@@ -58,6 +68,7 @@ export type NodeType = z.infer<typeof NodeTypeSchema>;
 export const MigrationNodeSchema = z.object({
   migrationId: z.string().min(1),
   originalId: z.string().optional(),
+  originalIndex: z.number().int().nonnegative().optional(),
   name: z.string(),
   type: NodeTypeSchema,
   path: z.array(z.string()),
@@ -73,7 +84,10 @@ export const MigrationNodeSchema = z.object({
     paddingLeft: sourced(z.number()),
     gap: sourced(z.number()),
     widthMode: sourced(z.enum(["FIXED", "HUG", "FILL"])),
-    heightMode: sourced(z.enum(["FIXED", "HUG", "FILL"]))
+    heightMode: sourced(z.enum(["FIXED", "HUG", "FILL"])),
+    positioning: sourced(z.enum(["AUTO", "ABSOLUTE"])).default({ value: null, source: "unavailable" }),
+    layoutAlign: sourced(z.string()).default({ value: null, source: "unavailable" }),
+    layoutGrow: sourced(z.number()).default({ value: null, source: "unavailable" })
   }),
   component: z.object({
     componentKey: sourced(z.string()),
@@ -86,7 +100,7 @@ export const MigrationNodeSchema = z.object({
   }),
   asset: z.object({
     svgSummary: sourced(z.string()),
-    imageFillSummary: sourced(z.string())
+    imageFillSummary: sourced(z.union([z.string(), ImageFillSummarySchema]))
   }),
   appearance: AppearanceSchema.default(emptyAppearance),
   riskFlags: z.array(z.string()).default([])

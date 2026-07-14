@@ -3,6 +3,7 @@ import type { MigrationNode } from "@pixso-figma-migration/migration-schema";
 export interface LayoutPlan {
   migrationId: string;
   shouldApply: boolean;
+  riskLevel: "low" | "high";
   operations: Array<{ property: string; value: string | number }>;
   warnings: string[];
 }
@@ -27,6 +28,23 @@ export interface BackgroundRectangleCandidate {
 }
 
 export type BackgroundRectangleClassification = "promote" | "retain" | "none";
+
+export interface RetainedBackgroundLike {
+  x: number;
+  y: number;
+  layoutPositioning: "AUTO" | "ABSOLUTE";
+}
+
+export function protectRetainedBackgroundBeforeLayout<T extends RetainedBackgroundLike>(
+  background: T,
+  applyLayoutMode: () => void
+): void {
+  const position = { x: background.x, y: background.y };
+  background.layoutPositioning = "ABSOLUTE";
+  applyLayoutMode();
+  background.x = position.x;
+  background.y = position.y;
+}
 
 function approximatelyEqual(left: number, right: number, tolerance: number): boolean {
   return Math.abs(left - right) <= tolerance;
@@ -63,13 +81,38 @@ function hasNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function overlaps(left: MigrationNode, right: MigrationNode): boolean {
+  const a = left.rect.value;
+  const b = right.rect.value;
+  if (!a || !b || left.visible.value === false || right.visible.value === false) return false;
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+export function hasUnconfirmedOverlappingChildren(children: MigrationNode[]): boolean {
+  for (let left = 0; left < children.length; left += 1) {
+    for (let right = left + 1; right < children.length; right += 1) {
+      if (!overlaps(children[left], children[right])) continue;
+      const leftUnknown = children[left].layout.positioning.source === "unavailable";
+      const rightUnknown = children[right].layout.positioning.source === "unavailable";
+      if (leftUnknown || rightUnknown) return true;
+    }
+  }
+  return false;
+}
+
+export function hasAbsolutePositionedChildren(children: MigrationNode[]): boolean {
+  return children.some((child) => child.layout.positioning.value === "ABSOLUTE");
+}
+
 function inferHugHeight(node: MigrationNode, children: MigrationNode[]): boolean {
   const mode = node.layout.mode.value;
   const container = node.rect.value;
   const top = node.layout.paddingTop.value;
   const bottom = node.layout.paddingBottom.value;
   const gap = node.layout.gap.value;
-  const visibleChildren = children.filter((child) => child.visible.value !== false && child.rect.value);
+  const visibleChildren = children.filter(
+    (child) => child.visible.value !== false && child.layout.positioning.value !== "ABSOLUTE" && child.rect.value
+  );
   if (!container || !hasNumber(top) || !hasNumber(bottom) || !hasNumber(gap) || !visibleChildren.length) return false;
 
   const heights = visibleChildren.map((child) => child.rect.value?.height ?? 0);
@@ -100,8 +143,29 @@ export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext
     return {
       migrationId: node.migrationId,
       shouldApply: false,
+      riskLevel: "low",
       operations,
       warnings: ["没有可恢复的自动布局方向。"]
+    };
+  }
+
+  if (hasUnconfirmedOverlappingChildren(context.children ?? [])) {
+    return {
+      migrationId: node.migrationId,
+      shouldApply: false,
+      riskLevel: "high",
+      operations: [],
+      warnings: ["检测到重叠子节点，但无法确认绝对定位/忽略自动布局属性，已跳过自动布局修复。"]
+    };
+  }
+
+  if (hasAbsolutePositionedChildren(context.children ?? [])) {
+    return {
+      migrationId: node.migrationId,
+      shouldApply: false,
+      riskLevel: "high",
+      operations: [],
+      warnings: ["检测到绝对定位或忽略自动布局的子节点；当前版本尚未安全恢复逐子节点定位，已跳过自动布局修复。"]
     };
   }
 
@@ -141,6 +205,7 @@ export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext
   return {
     migrationId: node.migrationId,
     shouldApply: operations.length > 0,
+    riskLevel: "low",
     operations,
     warnings
   };

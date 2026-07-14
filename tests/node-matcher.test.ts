@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { native, unavailable, type MigrationNode } from "../packages/migration-schema/src";
-import { assessRecoveryCompatibility, matchNodes, normalizeFlattenedRoot } from "../packages/node-matcher/src";
-import { classifyBackgroundRectangle, createLayoutPlan } from "../packages/layout-engine/src";
+import {
+  assessRecoveryCompatibility,
+  canSafelyRebuildMainComponent,
+  isHighConfidenceUniqueMatch,
+  matchNodes,
+  normalizeFlattenedRoot
+} from "../packages/node-matcher/src";
+import {
+  classifyBackgroundRectangle,
+  createLayoutPlan,
+  protectRetainedBackgroundBeforeLayout
+} from "../packages/layout-engine/src";
 
 function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
   return {
@@ -20,7 +30,10 @@ function node(overrides: Partial<MigrationNode> = {}): MigrationNode {
       paddingLeft: native(16),
       gap: native(8),
       widthMode: native("HUG"),
-      heightMode: native("HUG")
+      heightMode: native("HUG"),
+      positioning: unavailable(),
+      layoutAlign: unavailable(),
+      layoutGrow: unavailable()
     },
     component: {
       componentKey: unavailable(),
@@ -258,6 +271,35 @@ describe("node matcher", () => {
     expect(result.status).toBe("ambiguous");
   });
 
+  it("only accepts unique high-confidence matches for component rebuilding", () => {
+    const confident = {
+      migrationId: "source",
+      candidateId: "candidate",
+      score: 0.9,
+      status: "matched" as const,
+      reasons: ["name", "type", "rect"]
+    };
+    expect(isHighConfidenceUniqueMatch(confident)).toBe(true);
+    expect(canSafelyRebuildMainComponent("COMPONENT", "FRAME", confident)).toBe(true);
+    expect(canSafelyRebuildMainComponent("INSTANCE", "FRAME", confident)).toBe(false);
+    expect(canSafelyRebuildMainComponent("COMPONENT", "GROUP", confident)).toBe(false);
+    expect(canSafelyRebuildMainComponent("COMPONENT", "FRAME", confident, true)).toBe(false);
+    expect(isHighConfidenceUniqueMatch({
+      migrationId: "source",
+      candidateId: "candidate",
+      score: 0.79,
+      status: "matched",
+      reasons: ["name", "type", "rect"]
+    })).toBe(false);
+    expect(isHighConfidenceUniqueMatch({
+      migrationId: "source",
+      candidateId: "candidate",
+      score: 1,
+      status: "ambiguous",
+      reasons: ["migrationId"]
+    })).toBe(false);
+  });
+
   it("rejects explicit incompatible node types even with identical geometry", () => {
     const [result] = matchNodes([node({ type: "TEXT" })], [
       {
@@ -301,6 +343,33 @@ describe("layout engine", () => {
   it("does not treat an inset or non-bottom rectangle as a background", () => {
     expect(classifyBackgroundRectangle({ ...backgroundCandidate, x: 8 }, 200, 80)).toBe("none");
     expect(classifyBackgroundRectangle({ ...backgroundCandidate, index: 1 }, 200, 80)).toBe("none");
+  });
+
+  it("sets a retained background absolute before layout and preserves its position", () => {
+    const events: string[] = [];
+    let positioning: "AUTO" | "ABSOLUTE" = "AUTO";
+    const background = {
+      x: 12,
+      y: 7,
+      get layoutPositioning() {
+        return positioning;
+      },
+      set layoutPositioning(value: "AUTO" | "ABSOLUTE") {
+        positioning = value;
+        events.push(`positioning:${value}`);
+      }
+    };
+
+    protectRetainedBackgroundBeforeLayout(background, () => {
+      events.push("layoutMode");
+      if (background.layoutPositioning !== "ABSOLUTE") {
+        background.x += 100;
+        background.y += 100;
+      }
+    });
+
+    expect(events).toEqual(["positioning:ABSOLUTE", "layoutMode"]);
+    expect({ x: background.x, y: background.y }).toEqual({ x: 12, y: 7 });
   });
 
   it("creates Figma auto layout operations from migration data", () => {
@@ -385,6 +454,33 @@ describe("layout engine", () => {
 
     expect(plan.operations).toContainEqual({ property: "counterAxisSizingMode", value: "AUTO" });
     expect(plan.operations).toContainEqual({ property: "minHeight", value: 36 });
+  });
+
+  it("skips auto layout when overlapping children have unknown positioning", () => {
+    const plan = createLayoutPlan(node(), {
+      children: [
+        node({ migrationId: "a", rect: native({ x: 0, y: 0, width: 100, height: 40 }) }),
+        node({ migrationId: "b", rect: native({ x: 20, y: 10, width: 100, height: 40 }) })
+      ]
+    });
+
+    expect(plan.shouldApply).toBe(false);
+    expect(plan.riskLevel).toBe("high");
+    expect(plan.warnings.join(" ")).toContain("重叠子节点");
+  });
+
+  it("skips auto layout until known absolute children can be restored individually", () => {
+    const absoluteLayout = { ...node().layout, positioning: native("ABSOLUTE" as const) };
+    const plan = createLayoutPlan(node(), {
+      children: [
+        node({ migrationId: "a", rect: native({ x: 0, y: 0, width: 100, height: 40 }), layout: absoluteLayout }),
+        node({ migrationId: "b", rect: native({ x: 20, y: 10, width: 100, height: 40 }), layout: absoluteLayout })
+      ]
+    });
+
+    expect(plan.shouldApply).toBe(false);
+    expect(plan.riskLevel).toBe("high");
+    expect(plan.warnings.join(" ")).toContain("绝对定位");
   });
 });
 

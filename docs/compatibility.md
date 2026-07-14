@@ -17,6 +17,12 @@
 - Migration IDs prefer Pixso's stable node ID and are checked for duplicates before export and import. Duplicate IDs stop export or remain ambiguous instead of being bound by order.
 - Both plugin interfaces and user-facing diagnostics are displayed in Chinese.
 - Capability reports recursively inspect the selected subtree and include per-field coverage plus non-sensitive layout samples.
+- Capability probing checks `layoutPositioning`, `layoutAlign`, `layoutGrow`, `isAbsolute`, and `ignoreAutoLayout`. When overlapping children are found and positioning cannot be confirmed, Auto Layout is skipped and reported as partial.
+- Image-filled Pixso nodes are classified as images before rectangle/vector type mapping. Image summaries include fill count, scale modes, opacity, blend mode, available hashes, and transform presence.
+- Batched exports retain each root's original page or selection index in both `originalIndex` and its root path.
+- Figma provides a read-only preview stage and a separate safe-repair stage. High-risk items are skipped by default.
+- Retained complex background rectangles are made absolute before `layoutMode` is set, then restored to their saved local position.
+- Main Components are rebuilt only when a source Component has a unique high-confidence match to an ordinary Figma Frame. Instance candidates are reported but not rebound automatically.
 
 ## Must Be Verified In User Pixso Deployment
 
@@ -25,6 +31,7 @@
 - Whether component and instance fields are readable.
 - Whether text styles, image fills, SVG/vector details, and plugin data are readable.
 - Whether `setPluginData` is permitted.
+- Which of the private deployment's absolute-position candidates are present and what values they return.
 
 ## Verified With User Sample
 
@@ -46,7 +53,7 @@
 - Private Pixso API differences may require adapter edits in `apps/pixso-plugin/src/main.ts`.
 - Sketch import may rename or regroup nodes, lowering match confidence.
 - Overlapping repeated nodes with identical names, types, hierarchy, and geometry remain intentionally ambiguous unless a migration ID has already been written.
-- Geometry-based HUG inference remains conservative for files whose private Pixso API does not expose sizing modes. Complex overlap or absolute-position cases still require manual review.
+- Geometry-based HUG inference remains conservative for files whose private Pixso API does not expose sizing modes. Unconfirmed overlapping or absolute-position cases are skipped rather than automatically repaired.
 - Figma plugin does not automatically rebind uncertain component instances.
 - Page export requires the private deployment to expose `currentPage.children`; otherwise the plugin reports the capability gap.
 - Cancellation is checked between root-node batches. A single very large artboard still completes its current batch before stopping.

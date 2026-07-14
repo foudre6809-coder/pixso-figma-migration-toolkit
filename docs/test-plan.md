@@ -7,6 +7,8 @@
 - `pnpm test`
 - `pnpm build`
 
+GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes retained-background position order, image/solid/mixed fill classification, image summaries, original batch indices, overlap protection, and safe Component eligibility.
+
 ## Manual Pixso Checks
 
 1. Select a component spec artboard and run capability probe.
@@ -20,13 +22,15 @@
 
 1. Import the matching Sketch file into Figma Desktop.
 2. Use a clean import that has not been repaired by an older plugin version, then select only the imported scope.
-3. Run the repair plugin with the exported JSON.
-4. Review restored, partial, and failed counts.
+3. Run **仅扫描预览** with the exported JSON and confirm no Figma node changes.
+4. Review safe, partial, and failed counts, then run **执行安全修复**.
 5. Click failed items and inspect whether the failure is due to API unavailability, Sketch rename/regroup, or unsupported structure.
 6. Confirm mismatched components are reported without conversion or instance rebinding.
 7. Run the same JSON a second time and confirm migration IDs prevent positional rematching failures.
 8. Clear selection outlines and compare Pixso/Figma screenshots for component bounds, text baselines, fills, strokes, corner radii, and spacing.
 9. Include a gradient/image-fill sample and confirm unsupported Paint data is preserved rather than cleared.
+10. Include overlapping children with unavailable positioning fields and confirm the item is partial and unchanged.
+11. Confirm only a uniquely matched ordinary Frame from a source Component is rebuilt as a main Component.
 
 ## MVP Sample Set
 

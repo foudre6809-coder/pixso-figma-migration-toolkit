@@ -7,11 +7,19 @@ import {
   schemaVersion,
   unavailable
 } from "@pixso-figma-migration/migration-schema";
+import {
+  type RawNode,
+  type RootRef,
+  classifyPixsoNodeType,
+  createRootRefs,
+  readLayoutPositioning,
+  rootPath,
+  summarizeImageFills
+} from "./node-data";
 
 declare const pixso: any;
 declare const __html__: string;
 
-type RawNode = Record<string, any>;
 type ExportScope = MigrationMap["exportScope"];
 
 let exportCancelled = false;
@@ -35,6 +43,11 @@ const fieldsToProbe = [
   "layoutSizingVertical",
   "primaryAxisSizingMode",
   "counterAxisSizingMode",
+  "layoutPositioning",
+  "layoutAlign",
+  "layoutGrow",
+  "isAbsolute",
+  "ignoreAutoLayout",
   "componentKey",
   "mainComponent",
   "characters",
@@ -62,37 +75,33 @@ const fieldsToSample = new Set([
   "layoutSizingHorizontal",
   "layoutSizingVertical",
   "primaryAxisSizingMode",
-  "counterAxisSizingMode"
+  "counterAxisSizingMode",
+  "layoutPositioning",
+  "layoutAlign",
+  "layoutGrow",
+  "isAbsolute",
+  "ignoreAutoLayout"
 ]);
 
 function readSelection(): RawNode[] {
   return pixso?.currentPage?.selection ?? [];
 }
 
-function rootsForScope(scope: ExportScope): RawNode[] {
+function rootsForScope(scope: ExportScope): RootRef[] {
   const selection = readSelection();
   if (scope === "page") {
     const children = pixso?.currentPage?.children;
     if (!Array.isArray(children)) throw new Error("当前 Pixso 私有化版本未开放当前页面的子节点接口。");
-    return children;
+    return createRootRefs(children);
   }
+  const selectionRefs = createRootRefs(selection);
   if (scope === "artboard") {
-    const artboards = selection.filter((node) => Array.isArray(node.children));
+    const artboards = selectionRefs.filter(({ node }) => Array.isArray(node.children));
     if (!artboards.length) throw new Error("请先选择一个或多个画板，再按画板范围导出。");
     return artboards;
   }
   if (!selection.length) throw new Error("请先选择一个或多个节点。");
-  return selection;
-}
-
-function typeOf(node: RawNode): MigrationNode["type"] {
-  const type = String(node.type ?? "UNKNOWN").toUpperCase();
-  if (["FRAME", "GROUP", "COMPONENT", "INSTANCE", "TEXT", "VECTOR", "BOOLEAN"].includes(type)) {
-    return type as MigrationNode["type"];
-  }
-  if (["RECTANGLE", "ELLIPSE", "LINE", "POLYGON", "STAR", "SHAPE_PATH"].includes(type)) return "VECTOR";
-  if (type.includes("IMAGE")) return "IMAGE";
-  return "UNKNOWN";
+  return selectionRefs;
 }
 
 function createMigrationId(node: RawNode, path: string[]): string {
@@ -171,7 +180,7 @@ function normalizeCornerRadii(node: RawNode): MigrationNode["appearance"]["corne
   return unavailable("未开放圆角字段。");
 }
 
-function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: string): MigrationNode {
+function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: string, originalIndex?: number): MigrationNode {
   const migrationId = createMigrationId(node, path);
   const migrationIdPersisted = writeMigrationIdIfAllowed(node, migrationId);
   const children = Array.isArray(node.children) ? node.children : [];
@@ -182,8 +191,9 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
   return {
     migrationId,
     originalId: typeof node.id === "string" ? node.id : undefined,
+    originalIndex,
     name: String(node.name ?? "Unnamed"),
-    type: typeOf(node),
+    type: classifyPixsoNodeType(node),
     path,
     parentMigrationId,
     childMigrationIds: childIds,
@@ -205,7 +215,10 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
       paddingLeft: typeof node.paddingLeft === "number" ? native(node.paddingLeft) : unavailable("未开放左内边距字段。"),
       gap: typeof node.itemSpacing === "number" ? native(node.itemSpacing) : unavailable("未开放元素间距字段。"),
       widthMode: readSizing(node, "width"),
-      heightMode: readSizing(node, "height")
+      heightMode: readSizing(node, "height"),
+      positioning: readLayoutPositioning(node),
+      layoutAlign: typeof node.layoutAlign === "string" ? native(node.layoutAlign) : unavailable("未开放布局对齐字段。"),
+      layoutGrow: typeof node.layoutGrow === "number" ? native(node.layoutGrow) : unavailable("未开放布局伸展字段。")
     },
     component: {
       componentKey: typeof node.componentKey === "string" ? native(node.componentKey) : unavailable("未开放组件标识字段。"),
@@ -218,8 +231,11 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
       styleSummary: unavailable("文本样式摘要需要适配当前私有化版本。")
     },
     asset: {
-      svgSummary: typeOf(node) === "VECTOR" ? inferred("存在矢量节点", "能力检测未发现精确导出 SVG 的接口。") : unavailable(),
-      imageFillSummary: Array.isArray(node.fills) ? inferred(`包含 ${node.fills.length} 个填充`, "填充详情需要人工验证。") : unavailable()
+      svgSummary:
+        classifyPixsoNodeType(node) === "VECTOR"
+          ? inferred("存在矢量节点", "能力检测未发现精确导出 SVG 的接口。")
+          : unavailable(),
+      imageFillSummary: summarizeImageFills(node.fills)
     },
     appearance: {
       fill: normalizeSolidPaint(node.fills, "填充"),
@@ -230,7 +246,8 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
     },
     riskFlags: [
       ...(node.isMask ? ["mask"] : []),
-      ...(typeOf(node) === "GROUP" ? ["group-may-import-as-frame-or-group"] : []),
+      ...(classifyPixsoNodeType(node) === "GROUP" ? ["group-may-import-as-frame-or-group"] : []),
+      ...(readLayoutPositioning(node).source === "unavailable" ? ["absolute-layout-unconfirmed"] : []),
       ...(!migrationIdPersisted ? ["migration-id-not-persisted"] : [])
     ]
   };
@@ -241,6 +258,15 @@ function flatten(nodes: RawNode[], parentPath: string[] = [], parentMigrationId?
     const path = [...parentPath, `${String(node.name ?? "Unnamed")}[${index}]`];
     const mapped = toMigrationNode(node, path, parentMigrationId);
     const children = Array.isArray(node.children) ? flatten(node.children, path, mapped.migrationId) : [];
+    return [mapped, ...children];
+  });
+}
+
+function flattenRoots(roots: RootRef[]): MigrationNode[] {
+  return roots.flatMap((root) => {
+    const path = rootPath(root);
+    const mapped = toMigrationNode(root.node, path, undefined, root.originalIndex);
+    const children = Array.isArray(root.node.children) ? flatten(root.node.children, path, mapped.migrationId) : [];
     return [mapped, ...children];
   });
 }
@@ -314,8 +340,8 @@ function createCapabilityReport(roots: RawNode[]): CapabilityReport {
   };
 }
 
-function createMigrationMap(scope: ExportScope, roots: RawNode[], index: number, total: number): MigrationMap {
-  const nodes = flatten(roots);
+function createMigrationMap(scope: ExportScope, roots: RootRef[], index: number, total: number): MigrationMap {
+  const nodes = flattenRoots(roots);
   const migrationIds = new Set<string>();
   for (const node of nodes) {
     if (migrationIds.has(node.migrationId)) {

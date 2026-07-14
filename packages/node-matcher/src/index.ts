@@ -18,6 +18,26 @@ export interface MatchResult {
   reasons: string[];
 }
 
+export function isHighConfidenceUniqueMatch(match: MatchResult): boolean {
+  if (match.status !== "matched" || !match.candidateId) return false;
+  if (match.reasons.includes("migrationId")) return true;
+  return (
+    match.score >= 0.8 &&
+    match.reasons.includes("name") &&
+    match.reasons.includes("type") &&
+    (match.reasons.includes("path") || match.reasons.includes("rect"))
+  );
+}
+
+export function canSafelyRebuildMainComponent(
+  sourceType: string,
+  candidateType: string,
+  match: MatchResult,
+  hasForbiddenAncestor = false
+): boolean {
+  return !hasForbiddenAncestor && sourceType === "COMPONENT" && candidateType === "FRAME" && isHighConfidenceUniqueMatch(match);
+}
+
 export interface RecoveryCandidate {
   type: string;
   rect?: Rect;

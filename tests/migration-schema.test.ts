@@ -49,6 +49,7 @@ describe("migration appearance schema", () => {
     };
     const map = validateMigrationMap({ schemaVersion, createdAt: new Date().toISOString(), sourceTool: "pixso", sourceEnvironment: { deployment: "private" }, exportScope: "selection", nodes: [node], warnings: [] });
     expect(map.nodes[0]?.appearance.fill.source).toBe("unavailable");
+    expect(map.nodes[0]?.layout.positioning.source).toBe("unavailable");
     expect(() =>
       validateMigrationMap({
         schemaVersion,
@@ -60,5 +61,24 @@ describe("migration appearance schema", () => {
         warnings: []
       })
     ).toThrow(/迁移标识重复/);
+  });
+
+  it("accepts original root indices and structured image summaries", () => {
+    const node = {
+      migrationId: "image", originalIndex: 7, name: "Image", type: "IMAGE", path: ["Image[7]"], childMigrationIds: [],
+      rect: { value: { x: 0, y: 0, width: 100, height: 40 }, source: "native" }, visible: { value: true, source: "native" },
+      layout: Object.fromEntries(["mode", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "gap", "widthMode", "heightMode"].map((key) => [key, { value: null, source: "unavailable" }])),
+      component: { componentKey: { value: null, source: "unavailable" }, mainComponentId: { value: null, source: "unavailable" }, instanceOf: { value: null, source: "unavailable" } },
+      text: { characters: { value: null, source: "unavailable" }, styleSummary: { value: null, source: "unavailable" } },
+      asset: {
+        svgSummary: { value: null, source: "unavailable" },
+        imageFillSummary: { value: { count: 1, scaleModes: ["FILL"], opacities: [1], blendModes: ["NORMAL"], hashes: ["hash"], hasTransform: true }, source: "native" }
+      },
+      riskFlags: []
+    };
+    const map = validateMigrationMap({ schemaVersion, createdAt: new Date().toISOString(), sourceTool: "pixso", sourceEnvironment: { deployment: "private" }, exportScope: "selection", nodes: [node], warnings: [] });
+
+    expect(map.nodes[0]?.originalIndex).toBe(7);
+    expect(map.nodes[0]?.asset.imageFillSummary.value).toEqual(expect.objectContaining({ count: 1, hasTransform: true }));
   });
 });

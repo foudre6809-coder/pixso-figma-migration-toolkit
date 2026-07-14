@@ -9,14 +9,18 @@
       <h1>Pixso 迁移修复工具</h1>
       <label>迁移数据文件 <input id="file" type="file" accept=".json,application/json"></label>
       <textarea id="json" placeholder="请选择 migration-map.json，也可以在这里粘贴内容"></textarea>
-      <button id="repair">修复选中范围</button>
+      <div class="actions">
+        <button id="preview">仅扫描预览</button>
+        <button id="repair">执行安全修复</button>
+      </div>
       <section id="summary"></section>
       <ol id="results"></ol>
     </main>
     <style>
       body { font: 12px system-ui, sans-serif; margin: 16px; }
       textarea { width: 100%; height: 240px; box-sizing: border-box; }
-      button { margin: 12px 0; }
+      .actions { display: flex; gap: 8px; margin: 12px 0; }
+      button { margin: 0; }
       li { margin: 8px 0; }
       .modified { color: #087f5b; }
       .verified { color: #1971c2; }
@@ -27,6 +31,9 @@
       document.getElementById("file").onchange = async (event) => {
         const file = event.target.files?.[0];
         if (file) document.getElementById("json").value = await file.text();
+      };
+      document.getElementById("preview").onclick = () => {
+        parent.postMessage({ pluginMessage: { type: "preview", json: document.getElementById("json").value } }, "*");
       };
       document.getElementById("repair").onclick = () => {
         parent.postMessage({ pluginMessage: { type: "repair", json: document.getElementById("json").value } }, "*");
@@ -39,8 +46,9 @@
             acc[item.status] = (acc[item.status] || 0) + 1;
             return acc;
           }, {});
-          document.getElementById("summary").textContent =
-            `已修改 ${counts.modified || 0}，仅验证 ${counts.verified || 0}，部分修改 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`;
+          document.getElementById("summary").textContent = message.mode === "preview"
+            ? `可安全处理 ${counts.verified || 0}，需人工确认 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`
+            : `已修改 ${counts.modified || 0}，无需修改 ${counts.verified || 0}，部分处理 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`;
           const list = document.getElementById("results");
           list.replaceChildren(...message.results.map((item) => {
             const row = document.createElement("li");
@@ -49,7 +57,9 @@
             button.textContent = "定位";
             button.disabled = !item.figmaNodeId;
             button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: item.figmaNodeId } }, "*");
-            const statusLabels = { modified: "已修改", verified: "仅验证", partial: "部分修改", failed: "无法处理" };
+            const statusLabels = message.mode === "preview"
+              ? { modified: "可安全处理", verified: "可安全处理", partial: "需人工确认", failed: "无法处理" }
+              : { modified: "已修改", verified: "无需修改", partial: "部分处理", failed: "无法处理" };
             row.append(button, document.createTextNode(` ${statusLabels[item.status]}：${item.nodeName} ${item.messages.join("；")}`));
             return row;
           }));

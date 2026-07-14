@@ -18,6 +18,8 @@ declare const __html__: string;
 type RepairStatus = "modified" | "verified" | "partial" | "failed";
 type RunMode = "preview" | "apply";
 
+const launchSelectionIds = figma.currentPage.selection.map((node) => node.id);
+
 const matchStatusLabels = { matched: "已匹配但缺少目标节点", ambiguous: "存在歧义", unmatched: "未匹配" } as const;
 const reasonLabels: Record<string, string> = {
   migrationId: "迁移标识",
@@ -508,9 +510,12 @@ function runFromJson(json: string, mode: RunMode): RepairItem[] {
     throw new Error("你选择的是 capability-report.json（能力检测报告）。请改选 Pixso 导出的 migration-map.json。");
   }
   const map = validateMigrationMap(input);
-  const scopeRoot = figma.currentPage.selection.length
-    ? ({ children: figma.currentPage.selection } as BaseNode & ChildrenMixin)
-    : figma.currentPage;
+  const launchSelection = launchSelectionIds.flatMap((id) => {
+    const node = figma.getNodeById(id);
+    return node && "visible" in node ? [node as SceneNode] : [];
+  });
+  const scope = figma.currentPage.selection.length ? figma.currentPage.selection : launchSelection;
+  const scopeRoot = scope.length ? ({ children: scope } as BaseNode & ChildrenMixin) : figma.currentPage;
   const candidates = collectCandidates(scopeRoot);
   const normalized = normalizeFlattenedRoot(map.nodes, candidates);
   const matches = matchNodes(normalized.nodes, normalized.candidates);

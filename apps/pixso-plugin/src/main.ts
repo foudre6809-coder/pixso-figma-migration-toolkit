@@ -49,15 +49,15 @@ function rootsForScope(scope: ExportScope): RawNode[] {
   const selection = readSelection();
   if (scope === "page") {
     const children = pixso?.currentPage?.children;
-    if (!Array.isArray(children)) throw new Error("This Pixso deployment does not expose currentPage.children.");
+    if (!Array.isArray(children)) throw new Error("当前 Pixso 私有化版本未开放当前页面的子节点接口。");
     return children;
   }
   if (scope === "artboard") {
     const artboards = selection.filter((node) => Array.isArray(node.children));
-    if (!artboards.length) throw new Error("Select one or more artboards before exporting this scope.");
+    if (!artboards.length) throw new Error("请先选择一个或多个画板，再按画板范围导出。");
     return artboards;
   }
-  if (!selection.length) throw new Error("Select one or more nodes before exporting.");
+  if (!selection.length) throw new Error("请先选择一个或多个节点。");
   return selection;
 }
 
@@ -66,6 +66,7 @@ function typeOf(node: RawNode): MigrationNode["type"] {
   if (["FRAME", "GROUP", "COMPONENT", "INSTANCE", "TEXT", "VECTOR", "BOOLEAN"].includes(type)) {
     return type as MigrationNode["type"];
   }
+  if (["RECTANGLE", "ELLIPSE", "LINE", "POLYGON", "STAR", "SHAPE_PATH"].includes(type)) return "VECTOR";
   if (type.includes("IMAGE")) return "IMAGE";
   return "UNKNOWN";
 }
@@ -93,8 +94,8 @@ function writeMigrationIdIfAllowed(node: RawNode, migrationId: string): void {
 function mapSizing(value: unknown) {
   if (value === "HUG" || value === "AUTO") return native("HUG" as const);
   if (value === "FILL" || value === "STRETCH") return native("FILL" as const);
-  if (typeof value === "string") return inferred("FIXED" as const, `Unknown sizing value: ${value}`);
-  return unavailable<"FIXED" | "HUG" | "FILL">("Sizing field is not exposed.");
+  if (typeof value === "string") return inferred("FIXED" as const, `无法识别尺寸模式 ${value}，按固定尺寸处理。`);
+  return unavailable<"FIXED" | "HUG" | "FILL">("未开放尺寸模式字段。");
 }
 
 function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: string): MigrationNode {
@@ -116,36 +117,36 @@ function toMigrationNode(node: RawNode, path: string[], parentMigrationId?: stri
     rect:
       typeof node.x === "number" && typeof node.y === "number" && typeof node.width === "number" && typeof node.height === "number"
         ? native({ x: node.x, y: node.y, width: node.width, height: node.height })
-        : unavailable("Geometry fields are not exposed."),
-    visible: typeof node.visible === "boolean" ? native(node.visible) : unavailable("Visibility is not exposed."),
+        : unavailable("未开放位置或尺寸字段。"),
+    visible: typeof node.visible === "boolean" ? native(node.visible) : unavailable("未开放可见性字段。"),
     layout: {
       mode:
         node.layoutMode === "HORIZONTAL" || node.layoutMode === "VERTICAL"
           ? native(node.layoutMode)
           : node.layoutMode === "NONE"
             ? native("NONE")
-            : unavailable("Auto layout mode is not exposed."),
-      paddingTop: typeof node.paddingTop === "number" ? native(node.paddingTop) : unavailable("paddingTop unavailable"),
-      paddingRight: typeof node.paddingRight === "number" ? native(node.paddingRight) : unavailable("paddingRight unavailable"),
-      paddingBottom: typeof node.paddingBottom === "number" ? native(node.paddingBottom) : unavailable("paddingBottom unavailable"),
-      paddingLeft: typeof node.paddingLeft === "number" ? native(node.paddingLeft) : unavailable("paddingLeft unavailable"),
-      gap: typeof node.itemSpacing === "number" ? native(node.itemSpacing) : unavailable("itemSpacing unavailable"),
+            : unavailable("未开放自动布局方向字段。"),
+      paddingTop: typeof node.paddingTop === "number" ? native(node.paddingTop) : unavailable("未开放上内边距字段。"),
+      paddingRight: typeof node.paddingRight === "number" ? native(node.paddingRight) : unavailable("未开放右内边距字段。"),
+      paddingBottom: typeof node.paddingBottom === "number" ? native(node.paddingBottom) : unavailable("未开放下内边距字段。"),
+      paddingLeft: typeof node.paddingLeft === "number" ? native(node.paddingLeft) : unavailable("未开放左内边距字段。"),
+      gap: typeof node.itemSpacing === "number" ? native(node.itemSpacing) : unavailable("未开放元素间距字段。"),
       widthMode: mapSizing(node.layoutSizingHorizontal),
       heightMode: mapSizing(node.layoutSizingVertical)
     },
     component: {
-      componentKey: typeof node.componentKey === "string" ? native(node.componentKey) : unavailable("componentKey unavailable"),
+      componentKey: typeof node.componentKey === "string" ? native(node.componentKey) : unavailable("未开放组件标识字段。"),
       mainComponentId:
-        typeof node.mainComponent?.id === "string" ? native(node.mainComponent.id) : unavailable("mainComponent unavailable"),
-      instanceOf: typeof node.mainComponent?.name === "string" ? native(node.mainComponent.name) : unavailable("instanceOf unavailable")
+        typeof node.mainComponent?.id === "string" ? native(node.mainComponent.id) : unavailable("未开放主组件字段。"),
+      instanceOf: typeof node.mainComponent?.name === "string" ? native(node.mainComponent.name) : unavailable("未开放实例来源字段。")
     },
     text: {
-      characters: typeof node.characters === "string" ? native(node.characters) : unavailable("Text characters unavailable"),
-      styleSummary: unavailable("Text style summary requires deployment-specific adapter.")
+      characters: typeof node.characters === "string" ? native(node.characters) : unavailable("未开放文本内容字段。"),
+      styleSummary: unavailable("文本样式摘要需要适配当前私有化版本。")
     },
     asset: {
-      svgSummary: typeOf(node) === "VECTOR" ? inferred("Vector node present", "Exact SVG export is not exposed in probe.") : unavailable(),
-      imageFillSummary: Array.isArray(node.fills) ? inferred(`${node.fills.length} fills`, "Fill details require manual validation.") : unavailable()
+      svgSummary: typeOf(node) === "VECTOR" ? inferred("存在矢量节点", "能力检测未发现精确导出 SVG 的接口。") : unavailable(),
+      imageFillSummary: Array.isArray(node.fills) ? inferred(`包含 ${node.fills.length} 个填充`, "填充详情需要人工验证。") : unavailable()
     },
     riskFlags: [
       ...(node.isMask ? ["mask"] : []),
@@ -179,7 +180,7 @@ function createCapabilityReport(nodes: RawNode[]): CapabilityReport {
     checkedNodeCount: nodes.length,
     availableFields: [...available].sort(),
     unavailableFields: [...unavailableFields].filter((field) => !available.has(field)).sort(),
-    notes: ["Run this probe inside the target Pixso private deployment before trusting migration exports."]
+    notes: ["请在目标 Pixso 私有化环境中运行本检测，再使用迁移数据。"]
   };
 }
 

@@ -1,20 +1,24 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Pixso 设计系统迁移工具</title>
+  </head>
   <body>
     <main>
-      <h1>Pixso Migration Toolkit</h1>
-      <p>Run capability probe first, then export selected design-system nodes.</p>
-      <button id="probe">Export capability report</button>
-      <label>Scope
+      <h1>Pixso 设计系统迁移工具</h1>
+      <p>请先导出能力检测报告，再导出选中的设计系统节点。</p>
+      <button id="probe">导出能力检测报告</button>
+      <label>导出范围
         <select id="scope">
-          <option value="selection">Current selection</option>
-          <option value="artboard">Selected artboards</option>
-          <option value="page">Current page</option>
+          <option value="selection">当前选择</option>
+          <option value="artboard">选中的画板</option>
+          <option value="page">当前页面</option>
         </select>
       </label>
-      <label>Root nodes per batch <input id="batch-size" type="number" min="1" max="50" value="5"></label>
-      <button id="export">Export migration map</button>
-      <button id="cancel" disabled>Cancel</button>
+      <label>每批根节点数量 <input id="batch-size" type="number" min="1" max="50" value="5"></label>
+      <button id="export">导出迁移数据</button>
+      <button id="cancel" disabled>取消</button>
       <p id="status" aria-live="polite"></p>
     </main>
     <style>
@@ -48,8 +52,10 @@
         const message = event.data.pluginMessage;
         if (message?.type === "download-json") saveJson(message.name, message.data);
         if (message?.type === "export-progress")
-          document.getElementById("status").textContent = `Exported batch ${message.completed}/${message.total} (${message.nodeCount} nodes)`;
+          document.getElementById("status").textContent = `已导出第 ${message.completed}/${message.total} 批，共 ${message.nodeCount} 个节点`;
         if (message?.type === "error") document.getElementById("status").textContent = message.message;
+        if (message?.type === "export-complete") document.getElementById("status").textContent = `导出完成，共 ${message.total} 批`;
+        if (message?.type === "export-cancelled") document.getElementById("status").textContent = `已取消，完成 ${message.completed}/${message.total} 批`;
         if (["export-complete", "export-cancelled", "error"].includes(message?.type)) {
           document.getElementById("export").disabled = false;
           document.getElementById("cancel").disabled = true;

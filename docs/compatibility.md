@@ -8,6 +8,8 @@
 - Node matching handles missing migration IDs and reports ambiguity.
 - Pixso export supports selected nodes, selected artboards, or the current page, split into root-node batches.
 - Figma repair reports unsafe component/instance matches, text differences, missing image fills, vector conversion, and size anomalies.
+- Sketch-imported groups can match Pixso frames, and repeated names are disambiguated with indexed hierarchy paths.
+- Both plugin interfaces and user-facing diagnostics are displayed in Chinese.
 
 ## Must Be Verified In User Pixso Deployment
 
@@ -16,6 +18,12 @@
 - Whether component and instance fields are readable.
 - Whether text styles, image fills, SVG/vector details, and plugin data are readable.
 - Whether `setPluginData` is permitted.
+
+## Verified With User Sample
+
+- The `InputNumber 数字输入框` sample contained 252 Pixso metadata nodes and 252 Sketch nodes.
+- Offline matching resolved all 252 nodes after frame/group compatibility and indexed hierarchy matching were added.
+- The sample exposed geometry for all nodes, but did not expose recoverable Auto Layout values; this remains a Pixso API capability limit rather than a matcher failure.
 
 ## Known Limits
 

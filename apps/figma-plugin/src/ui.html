@@ -1,11 +1,15 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Pixso 迁移修复工具</title>
+  </head>
   <body>
     <main>
-      <h1>Pixso Migration Repair</h1>
-      <label>Migration map <input id="file" type="file" accept=".json,application/json"></label>
-      <textarea id="json" placeholder="Paste migration-map.json here"></textarea>
-      <button id="repair">Repair selected scope</button>
+      <h1>Pixso 迁移修复工具</h1>
+      <label>迁移数据文件 <input id="file" type="file" accept=".json,application/json"></label>
+      <textarea id="json" placeholder="请选择 migration-map.json，也可以在这里粘贴内容"></textarea>
+      <button id="repair">修复选中范围</button>
       <section id="summary"></section>
       <ol id="results"></ol>
     </main>
@@ -35,16 +39,17 @@
             return acc;
           }, {});
           document.getElementById("summary").textContent =
-            `Restored ${counts.restored || 0}, partial ${counts.partial || 0}, failed ${counts.failed || 0}`;
+            `已恢复 ${counts.restored || 0}，部分恢复 ${counts.partial || 0}，无法恢复 ${counts.failed || 0}`;
           const list = document.getElementById("results");
           list.replaceChildren(...message.results.map((item) => {
             const row = document.createElement("li");
             row.className = item.status;
             const button = document.createElement("button");
-            button.textContent = "select";
+            button.textContent = "定位";
             button.disabled = !item.figmaNodeId;
             button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: item.figmaNodeId } }, "*");
-            row.append(button, document.createTextNode(` ${item.status}: ${item.nodeName} ${item.messages.join("; ")}`));
+            const statusLabels = { restored: "已恢复", partial: "部分恢复", failed: "无法恢复" };
+            row.append(button, document.createTextNode(` ${statusLabels[item.status]}：${item.nodeName} ${item.messages.join("；")}`));
             return row;
           }));
         }

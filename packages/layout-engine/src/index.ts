@@ -23,7 +23,7 @@ export function createLayoutPlan(node: MigrationNode): LayoutPlan {
       migrationId: node.migrationId,
       shouldApply: false,
       operations,
-      warnings: ["No recoverable auto layout mode."]
+      warnings: ["没有可恢复的自动布局方向。"]
     };
   }
 
@@ -37,14 +37,14 @@ export function createLayoutPlan(node: MigrationNode): LayoutPlan {
 
   for (const [property, value] of numericFields) {
     if (hasNumber(value)) operations.push({ property, value });
-    else warnings.push(`${property} unavailable`);
+    else warnings.push(`${property} 字段不可用`);
   }
 
   if (node.layout.widthMode.value === "HUG") operations.push({ property: "primaryAxisSizingMode", value: "AUTO" });
   if (node.layout.heightMode.value === "HUG") operations.push({ property: "counterAxisSizingMode", value: "AUTO" });
 
   if (node.layout.widthMode.source === "inferred" || node.layout.heightMode.source === "inferred") {
-    warnings.push("Sizing mode was inferred; verify manually.");
+    warnings.push("尺寸模式来自推断，请人工确认。")
   }
 
   return {

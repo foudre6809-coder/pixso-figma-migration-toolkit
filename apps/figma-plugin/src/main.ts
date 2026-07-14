@@ -6,6 +6,15 @@ declare const __html__: string;
 
 type RepairStatus = "restored" | "partial" | "failed";
 
+const matchStatusLabels = { matched: "已匹配但缺少目标节点", ambiguous: "存在歧义", unmatched: "未匹配" } as const;
+const reasonLabels: Record<string, string> = {
+  migrationId: "迁移标识",
+  name: "名称",
+  type: "节点类型",
+  path: "层级路径",
+  rect: "位置尺寸"
+};
+
 interface RepairItem {
   migrationId: string;
   nodeName: string;
@@ -40,8 +49,8 @@ function hasImageFill(node: SceneNode): boolean {
 
 function collectCandidates(root: BaseNode & ChildrenMixin, parentPath: string[] = []): MatchCandidate[] {
   const children = root.children ?? [];
-  return children.flatMap((child) => {
-    const path = [...parentPath, child.name];
+  return children.flatMap((child, index) => {
+    const path = [...parentPath, `${child.name}[${index}]`];
     const scene = child as SceneNode;
     const current: MatchCandidate = {
       id: child.id,
@@ -130,13 +139,15 @@ function repairFromJson(json: string): RepairItem[] {
         migrationId: source.migrationId,
         nodeName: source.name,
         status: match.status === "ambiguous" ? "partial" : "failed",
-        messages: [`Node match ${match.status}; reasons: ${match.reasons.join(", ") || "none"}.`]
+        messages: [
+          `节点${matchStatusLabels[match.status]}（匹配分数 ${match.score.toFixed(2)}），依据：${match.reasons.map((reason) => reasonLabels[reason] ?? reason).join("、") || "无"}。`
+        ]
       });
       continue;
     }
     const figmaNode = figma.getNodeById(match.candidateId);
     if (!figmaNode || !("type" in figmaNode)) {
-      results.push({ migrationId: source.migrationId, nodeName: source.name, status: "failed", messages: ["Matched node missing."] });
+      results.push({ migrationId: source.migrationId, nodeName: source.name, status: "failed", messages: ["匹配到的节点已不存在。"] });
       continue;
     }
     results.push(repairNode(source, figmaNode as SceneNode));
@@ -151,9 +162,10 @@ figma.ui.onmessage = (message: { type: string; json?: string; nodeId?: string })
     try {
       const results = repairFromJson(message.json);
       figma.ui.postMessage({ type: "results", results });
-      figma.notify(`Migration repair complete: ${results.length} nodes reviewed.`);
+      figma.notify(`迁移修复完成：已检查 ${results.length} 个节点。`);
     } catch (error) {
-      figma.ui.postMessage({ type: "error", message: error instanceof Error ? error.message : String(error) });
+      console.error(error);
+      figma.ui.postMessage({ type: "error", message: "迁移数据无效或版本不兼容，请重新从 Pixso 导出。" });
     }
   }
   if (message.type === "select" && message.nodeId) {

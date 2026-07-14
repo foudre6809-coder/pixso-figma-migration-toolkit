@@ -91,6 +91,76 @@ describe("node matcher", () => {
 
     expect(result.status).toBe("matched");
   });
+
+  it("matches a Pixso frame imported through Sketch as a Figma group", () => {
+    const source = node({
+      name: "InputNumber 数字输入框",
+      type: "FRAME",
+      path: ["InputNumber 数字输入框[0]"],
+      rect: native({ x: 883, y: 4652, width: 1366, height: 2172 })
+    });
+    const [result] = matchNodes([source], [
+      {
+        id: "figma-group",
+        name: "InputNumber 数字输入框",
+        type: "GROUP",
+        path: ["InputNumber 数字输入框"],
+        rect: { x: 883, y: 4652, width: 1366, height: 2172 }
+      }
+    ]);
+
+    expect(result.status).toBe("matched");
+    expect(result.reasons).toEqual(expect.arrayContaining(["name", "type", "path", "rect"]));
+  });
+
+  it("matches an unknown private Pixso node from structure and geometry", () => {
+    const source = node({
+      name: "Rectangle Copy 6",
+      type: "UNKNOWN",
+      path: ["InputNumber 数字输入框[0]", "Rectangle Copy 6[0]"],
+      rect: native({ x: 20, y: 17, width: 1326, height: 2130 })
+    });
+    const [result] = matchNodes([source], [
+      {
+        id: "figma-vector",
+        name: "Rectangle Copy 6",
+        type: "VECTOR",
+        path: ["InputNumber 数字输入框", "Rectangle Copy 6"],
+        rect: { x: 20, y: 17, width: 1326, height: 2130 }
+      }
+    ]);
+
+    expect(result.status).toBe("matched");
+    expect(result.reasons).not.toContain("type");
+  });
+
+  it("uses sibling indices to disambiguate repeated names", () => {
+    const source = node({
+      name: "单位",
+      type: "TEXT",
+      path: ["InputNumber 数字输入框[0]", "编组[10]", "单位[2]"],
+      rect: native({ x: 8, y: 8, width: 28, height: 20 })
+    });
+    const [result] = matchNodes([source], [
+      {
+        id: "wrong-sibling",
+        name: "单位",
+        type: "TEXT",
+        path: ["InputNumber 数字输入框[0]", "编组[9]", "单位[2]"],
+        rect: { x: 8, y: 8, width: 28, height: 20 }
+      },
+      {
+        id: "exact-sibling",
+        name: "单位",
+        type: "TEXT",
+        path: ["InputNumber 数字输入框[0]", "编组[10]", "单位[2]"],
+        rect: { x: 8, y: 8, width: 28, height: 20 }
+      }
+    ]);
+
+    expect(result.status).toBe("matched");
+    expect(result.candidateId).toBe("exact-sibling");
+  });
 });
 
 describe("layout engine", () => {

@@ -260,30 +260,59 @@ function applyOperation(node: FrameNode | ComponentNode | InstanceNode, property
   }
 }
 
-function applyAppearance(source: MigrationNode, node: FrameNode | ComponentNode | InstanceNode): string[] {
+type AppearanceNode = SceneNode & GeometryMixin;
+
+function canApplyAppearance(node: SceneNode): node is AppearanceNode {
+  return "fills" in node && "strokes" in node && "strokeWeight" in node && "strokeAlign" in node;
+}
+
+function paintsEqual(current: ReadonlyArray<Paint> | PluginAPI["mixed"], expected: ReadonlyArray<Paint>): boolean {
+  return current !== figma.mixed && JSON.stringify(current) === JSON.stringify(expected);
+}
+
+function applyAppearance(source: MigrationNode, node: AppearanceNode): string[] {
   const messages: string[] = [];
   const { appearance } = source;
   if (appearance.fill.source !== "unavailable") {
-    node.fills = appearance.fill.value
+    const fills: ReadonlyArray<Paint> = appearance.fill.value
       ? [{ type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }]
       : [];
-    messages.push("已恢复填充。");
+    if (!paintsEqual(node.fills, fills)) {
+      node.fills = fills;
+      messages.push("已恢复填充。");
+    }
   }
   if (appearance.stroke.source !== "unavailable") {
-    node.strokes = appearance.stroke.value
+    const strokes: ReadonlyArray<Paint> = appearance.stroke.value
       ? [{ type: "SOLID", color: appearance.stroke.value.color, opacity: appearance.stroke.value.opacity }]
       : [];
-    messages.push("已恢复描边。");
+    if (!paintsEqual(node.strokes, strokes)) {
+      node.strokes = strokes;
+      messages.push("已恢复描边。");
+    }
   }
-  if (typeof appearance.strokeWeight.value === "number") node.strokeWeight = appearance.strokeWeight.value;
-  if (appearance.strokeAlign.value) node.strokeAlign = appearance.strokeAlign.value;
-  if (appearance.cornerRadii.value) {
+  if (typeof appearance.strokeWeight.value === "number" && node.strokeWeight !== appearance.strokeWeight.value) {
+    node.strokeWeight = appearance.strokeWeight.value;
+    messages.push("已恢复描边粗细。");
+  }
+  if (appearance.strokeAlign.value && node.strokeAlign !== appearance.strokeAlign.value) {
+    node.strokeAlign = appearance.strokeAlign.value;
+    messages.push("已恢复描边位置。");
+  }
+  if (appearance.cornerRadii.value && "topLeftRadius" in node) {
     const [topLeft, topRight, bottomRight, bottomLeft] = appearance.cornerRadii.value;
-    node.topLeftRadius = topLeft;
-    node.topRightRadius = topRight;
-    node.bottomRightRadius = bottomRight;
-    node.bottomLeftRadius = bottomLeft;
-    messages.push("已恢复圆角。");
+    if (
+      node.topLeftRadius !== topLeft ||
+      node.topRightRadius !== topRight ||
+      node.bottomRightRadius !== bottomRight ||
+      node.bottomLeftRadius !== bottomLeft
+    ) {
+      node.topLeftRadius = topLeft;
+      node.topRightRadius = topRight;
+      node.bottomRightRadius = bottomRight;
+      node.bottomLeftRadius = bottomLeft;
+      messages.push("已恢复圆角。");
+    }
   }
   return messages;
 }
@@ -354,7 +383,7 @@ function repairNode(
     const lostLinkWarning = compatibilityIssues.findIndex((issue) => issue.code === "component-link-lost");
     if (lostLinkWarning >= 0) compatibilityIssues.splice(lostLinkWarning, 1);
   }
-  const appearanceWork = hasRecoverableAppearance(source) && canAutoLayout(figmaNode);
+  const appearanceWork = hasRecoverableAppearance(source) && canApplyAppearance(figmaNode);
   const blockingIssue = compatibilityIssues.some((issue) => issue.severity === "error");
   if (blockingIssue) {
     return {
@@ -454,7 +483,7 @@ function repairNode(
     }
   }
 
-  if (canAutoLayout(layoutTarget) && hasRecoverableAppearance(source)) {
+  if (canApplyAppearance(layoutTarget) && hasRecoverableAppearance(source)) {
     messages.push(...applyAppearance(source, layoutTarget));
   }
   if (!componentDecision.eligible && componentDecision.message) {
@@ -463,10 +492,11 @@ function repairNode(
   writePluginMigrationId(layoutTarget, source.migrationId);
   plan.warnings.push(...compatibilityIssues.map((issue) => issue.message));
 
+  const didModify = plan.shouldApply || componentDecision.eligible || messages.some((message) => message.startsWith("已"));
   return {
     migrationId: source.migrationId,
     nodeName: source.name,
-    status: plan.warnings.length ? "partial" : "modified",
+    status: plan.warnings.length ? "partial" : didModify ? "modified" : "verified",
     figmaNodeId: layoutTarget.id,
     messages: [...messages, ...plan.warnings, ...componentMessages]
   };

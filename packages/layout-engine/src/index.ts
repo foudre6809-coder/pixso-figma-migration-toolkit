@@ -140,12 +140,15 @@ export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext
   if (mode === "HORIZONTAL" || mode === "VERTICAL") {
     operations.push({ property: "layoutMode", value: mode });
   } else {
+    const layoutContainer = ["FRAME", "GROUP", "COMPONENT", "INSTANCE"].includes(node.type);
+    const warnings =
+      layoutContainer && node.layout.mode.source === "unavailable" ? ["没有可恢复的自动布局方向。"] : [];
     return {
       migrationId: node.migrationId,
       shouldApply: false,
       riskLevel: "low",
       operations,
-      warnings: ["没有可恢复的自动布局方向。"]
+      warnings
     };
   }
 

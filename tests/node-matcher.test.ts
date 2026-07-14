@@ -401,6 +401,22 @@ describe("layout engine", () => {
     expect(plan.operations).toEqual([]);
   });
 
+  it("does not flag missing auto layout on drawing nodes as a partial failure", () => {
+    const base = node();
+    const plan = createLayoutPlan(
+      node({
+        type: "VECTOR",
+        layout: {
+          ...base.layout,
+          mode: unavailable()
+        }
+      })
+    );
+
+    expect(plan.shouldApply).toBe(false);
+    expect(plan.warnings).toEqual([]);
+  });
+
   it("applies a recoverable layout direction even when spacing is unavailable", () => {
     const plan = createLayoutPlan(
       node({

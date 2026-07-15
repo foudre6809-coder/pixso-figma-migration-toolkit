@@ -71,6 +71,7 @@ export interface SampleAnalysis {
       sizeFieldNodes: number;
       transformFieldNodes: number;
       xYStatus: "not-found";
+      coordinateModel: "unknown";
     };
     attributeCandidates: {
       layoutModeNodes: number;
@@ -263,7 +264,7 @@ function summarizeParsed(parsed: ParsedPixDocument): SampleAnalysis["decoded"] {
     nodeCount: parsed.nodes.length,
     locatedRecordBoundaryCount: parsed.nodes.filter((node) => node.raw.recordOffset >= 0).length,
     nodeTypeCounts,
-    geometryCandidates: { sizeFieldNodes, transformFieldNodes, xYStatus: "not-found" },
+    geometryCandidates: { sizeFieldNodes, transformFieldNodes, xYStatus: "not-found", coordinateModel: parsed.coordinateModel },
     attributeCandidates: { layoutModeNodes, paddingNodes, gapNodes, strokeNodes }
   };
 }

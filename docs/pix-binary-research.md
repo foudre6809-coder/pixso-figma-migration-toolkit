@@ -84,3 +84,26 @@ node apps/pix-file-probe/dist/binary-cli.js /local/00-empty.pix /local/01-frame.
 ```
 
 The generated `output/pix-binary-diff-report.json` and `.md` redact paths, node names, and non-standard entry names.
+
+## Next-round controlled values
+
+The independent GPT review agreed that structural decoding may continue while semantic extraction remains STOP. It recommended keeping `coordinateModel: "unknown"` until these local files exist:
+
+| Sample | x | y | width | height | Purpose |
+| --- | ---: | ---: | ---: | ---: | --- |
+| origin | 0 | 0 | 100 | 50 | baseline |
+| x-only | 37 | 0 | 100 | 50 | isolate m02 delta |
+| y-only | 0 | 23 | 100 | 50 | isolate m12 delta |
+| asymmetric | 41 | 17 | 123 | 47 | distinguish top-left from center `(102.5, 40.5)` |
+
+Keep rotation 0, scale 1, stroke/effects off, one node, and an unchanged parent. If nesting must be tested, add a separate parent-relative series instead of changing the parent in this series.
+
+Minimum property values:
+
+- Auto Layout: off; horizontal with spacing 0; horizontal with spacing 20.
+- Padding-left: 0; 10; 30, with other sides 0.
+- Gap: 0; 10; 40, with two fixed 50×50 children.
+- Stroke: none; black width 1; black width 5.
+- Radius: 0; 8; 24 on a fixed 100×100 rectangle.
+
+Each series changes one value only. The report must emit field path, old value, new value, and confidence; schema-field presence alone remains insufficient.

@@ -76,6 +76,7 @@ describe("pix parser prototype", () => {
     });
     const result = parseDecodedPixsoPayload(schemaBytes, "synthetic.pix", payload);
     expect(result.rootRoundTripExact).toBe(true);
+    expect(result.coordinateModel).toBe("unknown");
     expect(result.nodes).toHaveLength(1);
     expect(result.nodes[0]).toMatchObject({
       id: "1:2",

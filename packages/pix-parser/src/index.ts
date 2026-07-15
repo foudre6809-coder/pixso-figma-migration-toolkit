@@ -34,6 +34,7 @@ export interface ParsedPixNode {
 export interface ParsedPixDocument {
   serialization: "kiwi";
   compression: "zstd";
+  coordinateModel: "unknown";
   schemaDefinitionCount: number;
   rootMessage: "PixsoMsg";
   rootRoundTripExact: boolean;
@@ -123,6 +124,7 @@ export function parseDecodedPixsoPayload(
   return {
     serialization: "kiwi",
     compression: "zstd",
+    coordinateModel: "unknown",
     schemaDefinitionCount: schema.definitions.length,
     rootMessage: "PixsoMsg",
     rootRoundTripExact: true,

@@ -2,7 +2,7 @@
 
 ## Outcome
 
-The serialization and node-record structure are confirmed for two local real files:
+The controlled semantic round is **PASS**. Sixteen local synthetic Pixso files confirmed coordinates plus Auto Layout direction, Padding, and visible Stroke values. This remains a narrow parser prototype, not a claim of general `.pix` support.
 
 ```text
 .pix ZIP
@@ -12,98 +12,66 @@ The serialization and node-record structure are confirmed for two local real fil
         └── pixsoNodes[]      sequential PixsoNode records
 ```
 
-This is not yet general `.pix` parser support. The current conclusion is **STOP** because there are only two non-controlled real files, no third known coordinate value, and no off/A/B attribute sets.
+No real `.pix` file, unpacked image, business text, or path is committed. The committed controlled report contains only synthetic sample names, numeric values, field paths, offsets, hashes, and limitations.
 
-## Evidence threshold
+## Sample integrity
 
-A format or field is marked confirmed only when structural decoding and byte-level validation agree. String presence alone is never treated as field semantics.
+| Group | Files | Exact decode/re-encode | Stable target GUID/identity | Stable node count | Excluded derived changes |
+| --- | ---: | --- | --- | --- | --- |
+| coordinate | 4 | yes | yes | yes | none |
+| Auto Layout | 3 | yes | yes | yes | child transforms follow direction; disabled layout retains dormant padding/gap storage |
+| Padding | 4 | yes | yes | yes | child transforms follow padding; `stackMode=HORIZONTAL`, gap=0 remain stable |
+| Stroke | 5 | yes | yes | yes | `strokePaddingPath` appears with a stroke and is treated as derived geometry |
 
-- `pixso.binary`: decoded with Kiwi `decodeBinarySchema`.
-- Root message: `PixsoMsg` from the decoded schema.
-- Payload validation: decoded root message re-encodes byte-for-byte to the full decompressed payload.
-- Node boundaries: every decoded `PixsoNode` re-encodes to a sequential byte range in the original payload.
-- Business values: node names and non-standard entry names are excluded from committed reports.
+Container/document metadata is excluded before semantic comparison. Each target is located by stable GUID and independently by synthetic name, type, parent link, and node count.
 
 ## Confirmed fields
 
-| Field | Encoding/evidence | Confidence |
+| Semantic | Kiwi field | Evidence | Limitation |
+| --- | --- | --- | --- |
+| local x/y | `PixsoNode.transform.m02/m12` | 0/0, 10/20, 50/70, and -20/-30 match exactly | nested page-absolute coordinates require ancestor transform composition |
+| width/height | `PixsoNode.size.x/y` | schema field and exact message round trip | none |
+| Auto Layout direction | `PixsoNode.stackMode` | absent, `HORIZONTAL`, and `VERTICAL` match | disabled layout can retain dormant padding/gap values |
+| Padding | `stackPaddingTop/Right/Bottom/Left` | 0, 8, 16, and asymmetric 4/8/12/16 match | variable-bound padding not sampled |
+| Stroke existence/color | `strokePaints[]` and `strokePaints[].color` | none, #D9DDE7, and #FF0000 match | only visible solid paints sampled |
+| Stroke width | `strokeWeight` and four `border*Weight` fields | 1 px and 2 px match | Pixso omits default `strokeWeight=1` but stores four 1 px border weights |
+| Stroke align | `strokeAlign` | INSIDE and OUTSIDE match | Pixso omits default `INSIDE` |
+
+Node record boundaries, `name`, `type`, `guid`, `parentIndex.guid`, schema decoding, Zstandard wrapping, and full root-message byte round trips remain confirmed from the prior round.
+
+## Inferred or not found
+
+| Field | Status | Reason |
 | --- | --- | --- |
-| Root record | Kiwi `PixsoMsg` exact round trip | confirmed |
-| Node boundary | Sequential encoded `PixsoNode` offset and length | confirmed |
-| Node id | `PixsoNode.guid` (`sessionID:localID`) | confirmed when present |
-| Parent link | `PixsoNode.parentIndex.guid` | confirmed when present |
-| Node name | Kiwi string `PixsoNode.name` | confirmed when present; value redacted |
-| Node type | `PixsoNode.type` / `NodeType` enum | confirmed when present |
-| Width/height | `PixsoNode.size` Vector x/y | confirmed when present |
+| gap / `stackSpacing` | inferred | deliberately out of scope; retained in diagnostics only |
+| Stroke style reference | not-found | no style reference existed in controlled Stroke samples |
+| Stroke variable binding | not-found | no variable binding existed in controlled Stroke samples |
+| page-absolute nested geometry | inferred | local transforms are confirmed; ancestor composition still needs a nested controlled series |
+| radius, component/instance, image, vector, text style | not-found | deliberately out of scope |
 
-Sparse records can omit some fields. The parser leaves them absent and records `not-found`; it never creates placeholder values.
+## Parser behavior
 
-## Inferred fields
+`packages/pix-parser` now emits only confirmed semantic fields:
 
-| Requested property | Decoded schema field | Current status |
-| --- | --- | --- |
-| x/y | `transform.m02/m12` plus an unknown coordinate conversion | inferred |
-| layoutMode | `stackMode` | inferred |
-| padding | `stackPaddingTop/Right/Bottom/Left` | inferred |
-| gap | `stackSpacing` | inferred |
-| stroke | `strokePaints` and border-weight fields | inferred |
-| radius | `cornerRadius`/corner-specific fields | inferred |
+- local `rect.x/y` from matrix translation;
+- `rect.width/height`;
+- Auto Layout direction when `stackMode` is present;
+- active four-direction Padding;
+- visible Stroke paint, color, opacity, width, and align.
 
-These remain inferred until controlled known values validate the mapping in at least three files.
-
-## Binary-format checks
-
-- Header/tail hex and 4 KiB entropy blocks are stored in the JSON report.
-- Null-terminated schema strings are stored with offsets; design-payload strings are redacted.
-- Schema pairs receive direct byte-range diffs and a 64-byte block LCS metric.
-- Kiwi variable integers and null-terminated strings explain the schema layout.
-- Kiwi floats use 32-bit float encoding with a compact zero representation, per the upstream format.
-- The tool scans gzip, zlib, Brotli wrapper markers, LZ4, Snappy framing, and Zstandard signatures. Only Zstandard is confirmed for the design payload.
-- Protobuf wire coverage, MessagePack/CBOR collection heuristics, BSON length/terminator checks, and FlatBuffers identifier checks are reported but not promoted over definitive Kiwi decoding.
-- Numeric candidates are not assigned meaning without controlled expected values, regardless of integer, varint, zigzag, float32/float64, or endian matches.
-
-## Prototype boundaries
-
-`packages/pix-parser` is deliberately narrow:
-
-- reads ZIP entries in memory;
-- rejects encrypted entries;
-- identifies the Kiwi schema and nested payload;
-- invokes the local `zstd` executable without network access;
-- requires exact `PixsoMsg` decode/re-encode equality;
-- emits nodes with per-field confidence;
-- leaves x/y absent instead of guessing.
-
-The package must not be wired into the existing Pixso or Figma plugins until the PASS threshold is met.
+Gap and dormant Padding candidates stay under `raw.diagnostics`. Style references and variable bindings remain `not-found`; the parser does not invent fallback metadata. `coordinateModel` is `local-transform`, so consumers must compose ancestors before treating nested coordinates as page-absolute.
 
 ## Reproduction
 
 ```bash
 pnpm build
-node apps/pix-file-probe/dist/binary-cli.js /local/00-empty.pix /local/01-frame.pix --output-dir output
+node apps/pix-file-probe/dist/binary-cli.js /local/controlled/*.pix --output-dir output
 ```
 
-The generated `output/pix-binary-diff-report.json` and `.md` redact paths, node names, and non-standard entry names.
+When all 16 required controlled filenames are present, the CLI writes `output/pix-controlled-diff-report.json` and `.md`. Other input sets continue to use the generic structural report.
 
-## Next-round controlled values
+## Next validation
 
-The independent GPT review agreed that structural decoding may continue while semantic extraction remains STOP. It recommended keeping `coordinateModel: "unknown"` until these local files exist:
-
-| Sample | x | y | width | height | Purpose |
-| --- | ---: | ---: | ---: | ---: | --- |
-| origin | 0 | 0 | 100 | 50 | baseline |
-| x-only | 37 | 0 | 100 | 50 | isolate m02 delta |
-| y-only | 0 | 23 | 100 | 50 | isolate m12 delta |
-| asymmetric | 41 | 17 | 123 | 47 | distinguish top-left from center `(102.5, 40.5)` |
-
-Keep rotation 0, scale 1, stroke/effects off, one node, and an unchanged parent. If nesting must be tested, add a separate parent-relative series instead of changing the parent in this series.
-
-Minimum property values:
-
-- Auto Layout: off; horizontal with spacing 0; horizontal with spacing 20.
-- Padding-left: 0; 10; 30, with other sides 0.
-- Gap: 0; 10; 40, with two fixed 50×50 children.
-- Stroke: none; black width 1; black width 5.
-- Radius: 0; 8; 24 on a fixed 100×100 rectangle.
-
-Each series changes one value only. The report must emit field path, old value, new value, and confidence; schema-field presence alone remains insufficient.
+1. Parent/child samples with documented parent translation to validate page-absolute transform composition.
+2. Stroke samples with a shared style and variable binding to distinguish visible value, reference, binding, and fallback.
+3. Separate controlled rounds for Gap and Radius only if explicitly authorized.

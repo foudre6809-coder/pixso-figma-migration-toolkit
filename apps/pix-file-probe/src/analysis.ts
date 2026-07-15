@@ -70,8 +70,8 @@ export interface SampleAnalysis {
     geometryCandidates: {
       sizeFieldNodes: number;
       transformFieldNodes: number;
-      xYStatus: "not-found";
-      coordinateModel: "unknown";
+      xYStatus: "confirmed";
+      coordinateModel: "local-transform";
     };
     attributeCandidates: {
       layoutModeNodes: number;
@@ -253,8 +253,8 @@ function summarizeParsed(parsed: ParsedPixDocument): SampleAnalysis["decoded"] {
     if (node.raw.transform) transformFieldNodes += 1;
     if (node.attributes.layoutMode !== undefined) layoutModeNodes += 1;
     if (node.attributes.padding !== undefined) paddingNodes += 1;
-    if (node.attributes.gap !== undefined) gapNodes += 1;
-    if (node.attributes.strokeCount !== undefined) strokeNodes += 1;
+    if (node.raw.diagnostics.gapCandidate !== undefined) gapNodes += 1;
+    if (node.attributes.stroke !== undefined) strokeNodes += 1;
   }
   return {
     rootMessage: parsed.rootMessage,
@@ -264,7 +264,7 @@ function summarizeParsed(parsed: ParsedPixDocument): SampleAnalysis["decoded"] {
     nodeCount: parsed.nodes.length,
     locatedRecordBoundaryCount: parsed.nodes.filter((node) => node.raw.recordOffset >= 0).length,
     nodeTypeCounts,
-    geometryCandidates: { sizeFieldNodes, transformFieldNodes, xYStatus: "not-found", coordinateModel: parsed.coordinateModel },
+    geometryCandidates: { sizeFieldNodes, transformFieldNodes, xYStatus: "confirmed", coordinateModel: parsed.coordinateModel },
     attributeCandidates: { layoutModeNodes, paddingNodes, gapNodes, strokeNodes }
   };
 }

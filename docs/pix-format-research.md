@@ -18,13 +18,14 @@ Primary format reference: [evanw/kiwi](https://github.com/evanw/kiwi), especiall
 - `pixso.binary` is a versioned schema dictionary, not the principal document instance data.
 - The nested Zstandard-compressed `.pix` entry is the principal Kiwi message stream for the inspected files.
 - `PixsoMsg.pixsoNodes[]` is the document node-record sequence. This is strongly supported by schema typing, exact root-message round trips, and sequential per-node record matches.
-- `PixsoNode.size` represents width/height. `PixsoNode.transform.m02/m12` are coordinate candidates, but conversion to top-left x/y is not confirmed.
-- `stackMode`, `stackPadding*`, `stackSpacing`, and `strokePaints` are likely the requested layout/padding/gap/stroke properties, but controlled off/A/B value validation is still missing.
+- `PixsoNode.size` represents width/height.
+- Sixteen controlled synthetic samples confirm `transform.m02/m12` as parent-local x/y translation, `stackMode` as Auto Layout direction, four `stackPadding*` fields as Padding, and `strokePaints`/border weights/`strokeAlign` as visible Stroke values.
 
 ## Not verified
 
-- A stable conversion from transform matrices to `rect.x` and `rect.y` across rotation, nesting, and different coordinate spaces.
-- Controlled value mappings for Auto Layout, padding, gap, stroke, and corner radius.
+- Page-absolute nested coordinates across rotation, nesting, and different coordinate spaces. Local translation is confirmed.
+- Controlled value mappings for gap and corner radius.
+- Stroke style references and variable bindings; the controlled samples contained visible values only.
 - The meaning of sparse or deletion-state `PixsoNode` records that omit id, name, or type.
 - Compatibility beyond the two inspected versions.
 - Lossless handling of every blob, image, vector network, text run, variable, prototype, and unknown future field.
@@ -33,12 +34,9 @@ Primary format reference: [evanw/kiwi](https://github.com/evanw/kiwi), especiall
 
 Real samples remain local and must not be committed. The next run needs:
 
-1. One minimal frame at three documented x/y pairs with all other content unchanged.
-2. Auto Layout off, horizontal, and vertical.
-3. Padding off/zero, value A, and value B.
-4. Gap off/zero, value A, and value B.
-5. Stroke off, value A, and value B.
-6. Corner radius off/zero, value A, and value B.
-7. Two unchanged saves to identify nondeterministic IDs and timestamps.
+1. A nested parent/child coordinate series with documented parent and child translations.
+2. Stroke visible values, shared style reference, and variable binding variants.
+3. Gap and corner-radius off/A/B series only in separately authorized rounds.
+4. Two unchanged saves to identify nondeterministic IDs and timestamps.
 
 Only SHA-256, sizes, structural counts, schema-safe strings, redacted entry hashes, and redacted differential evidence may be committed.

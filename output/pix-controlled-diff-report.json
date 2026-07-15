@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-15T06:30:48.483Z",
+  "privacy": {
+    "localOnly": true,
+    "pathsRedacted": true,
+    "realFilesCommitted": false
+  },
+  "sampleCount": 16,
+  "integrity": [
+    {
+      "group": "coordinate",
+      "samples": [
+        "coord-00.pix",
+        "coord-10.pix",
+        "coord-50.pix",
+        "coord-neg.pix"
+      ],
+      "decoded": true,
+      "targetGuidStable": true,
+      "targetIdentityStable": true,
+      "nodeCountStable": true,
+      "unexpectedChanges": []
+    },
+    {
+      "group": "autoLayout",
+      "samples": [
+        "layout-none.pix",
+        "layout-horizontal.pix",
+        "layout-vertical.pix"
+      ],
+      "decoded": true,
+      "targetGuidStable": true,
+      "targetIdentityStable": true,
+      "nodeCountStable": true,
+      "unexpectedChanges": [
+        "Child transforms change as a derived consequence of direction.",
+        "The none sample retains padding/gap storage while stackMode is absent; stackMode alone represents direction state."
+      ]
+    },
+    {
+      "group": "padding",
+      "samples": [
+        "padding-0.pix",
+        "padding-8.pix",
+        "padding-16.pix",
+        "padding-asym.pix"
+      ],
+      "decoded": true,
+      "targetGuidStable": true,
+      "targetIdentityStable": true,
+      "nodeCountStable": true,
+      "unexpectedChanges": [
+        "Child transforms change deterministically with padding; layoutMode remains HORIZONTAL and gap remains 0."
+      ]
+    },
+    {
+      "group": "stroke",
+      "samples": [
+        "stroke-none.pix",
+        "stroke-1.pix",
+        "stroke-2.pix",
+        "stroke-color.pix",
+        "stroke-outside.pix"
+      ],
+      "decoded": true,
+      "targetGuidStable": true,
+      "targetIdentityStable": true,
+      "nodeCountStable": true,
+      "unexpectedChanges": [
+        "strokePaddingPath appears when a stroke exists and is treated as a derived path, not a semantic source field."
+      ]
+    }
+  ],
+  "coordinate": {
+    "status": "confirmed",
+    "fieldPath": "PixsoNode.transform.m02/m12",
+    "model": "local-transform",
+    "samples": [
+      {
+        "sample": "coord-00.pix",
+        "known": {
+          "x": 0,
+          "y": 0
+        },
+        "decoded": {
+          "x": 0,
+          "y": 0
+        },
+        "fieldPath": "PixsoNode.transform.m02/m12",
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "coord-10.pix",
+        "known": {
+          "x": 10,
+          "y": 20
+        },
+        "decoded": {
+          "x": 10,
+          "y": 20
+        },
+        "fieldPath": "PixsoNode.transform.m02/m12",
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "coord-50.pix",
+        "known": {
+          "x": 50,
+          "y": 70
+        },
+        "decoded": {
+          "x": 50,
+          "y": 70
+        },
+        "fieldPath": "PixsoNode.transform.m02/m12",
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "coord-neg.pix",
+        "known": {
+          "x": -20,
+          "y": -30
+        },
+        "decoded": {
+          "x": -20,
+          "y": -30
+        },
+        "fieldPath": "PixsoNode.transform.m02/m12",
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      }
+    ],
+    "limitations": [
+      "Root samples show no page-origin offset: m02/m12 equal the documented x/y values, including negatives.",
+      "Nested-node m02/m12 values are parent-local translations; page-absolute coordinates require composing ancestor transforms."
+    ]
+  },
+  "autoLayout": {
+    "status": "confirmed",
+    "fieldPath": "PixsoNode.stackMode",
+    "samples": [
+      {
+        "sample": "layout-none.pix",
+        "known": null,
+        "decoded": null,
+        "fieldPath": "PixsoNode.stackMode",
+        "recordOffset": 94,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "layout-horizontal.pix",
+        "known": "HORIZONTAL",
+        "decoded": "HORIZONTAL",
+        "fieldPath": "PixsoNode.stackMode",
+        "recordOffset": 97,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "layout-vertical.pix",
+        "known": "VERTICAL",
+        "decoded": "VERTICAL",
+        "fieldPath": "PixsoNode.stackMode",
+        "recordOffset": 94,
+        "confidence": "confirmed"
+      }
+    ],
+    "limitations": [
+      "Direction-induced child transform changes are derived and are not used to identify stackMode."
+    ]
+  },
+  "padding": {
+    "status": "confirmed",
+    "fieldPaths": [
+      "PixsoNode.stackPaddingTop",
+      "PixsoNode.stackPaddingRight",
+      "PixsoNode.stackPaddingBottom",
+      "PixsoNode.stackPaddingLeft"
+    ],
+    "samples": [
+      {
+        "sample": "padding-0.pix",
+        "known": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "decoded": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "fieldPath": [
+          "PixsoNode.stackPaddingTop",
+          "PixsoNode.stackPaddingRight",
+          "PixsoNode.stackPaddingBottom",
+          "PixsoNode.stackPaddingLeft"
+        ],
+        "recordOffset": 94,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "padding-8.pix",
+        "known": {
+          "top": 8,
+          "right": 8,
+          "bottom": 8,
+          "left": 8
+        },
+        "decoded": {
+          "top": 8,
+          "right": 8,
+          "bottom": 8,
+          "left": 8
+        },
+        "fieldPath": [
+          "PixsoNode.stackPaddingTop",
+          "PixsoNode.stackPaddingRight",
+          "PixsoNode.stackPaddingBottom",
+          "PixsoNode.stackPaddingLeft"
+        ],
+        "recordOffset": 97,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "padding-16.pix",
+        "known": {
+          "top": 16,
+          "right": 16,
+          "bottom": 16,
+          "left": 16
+        },
+        "decoded": {
+          "top": 16,
+          "right": 16,
+          "bottom": 16,
+          "left": 16
+        },
+        "fieldPath": [
+          "PixsoNode.stackPaddingTop",
+          "PixsoNode.stackPaddingRight",
+          "PixsoNode.stackPaddingBottom",
+          "PixsoNode.stackPaddingLeft"
+        ],
+        "recordOffset": 97,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "padding-asym.pix",
+        "known": {
+          "top": 4,
+          "right": 8,
+          "bottom": 12,
+          "left": 16
+        },
+        "decoded": {
+          "top": 4,
+          "right": 8,
+          "bottom": 12,
+          "left": 16
+        },
+        "fieldPath": [
+          "PixsoNode.stackPaddingTop",
+          "PixsoNode.stackPaddingRight",
+          "PixsoNode.stackPaddingBottom",
+          "PixsoNode.stackPaddingLeft"
+        ],
+        "recordOffset": 97,
+        "confidence": "confirmed"
+      }
+    ],
+    "limitations": [
+      "Only numeric padding values are confirmed; variable-bound padding was not present in these samples."
+    ]
+  },
+  "stroke": {
+    "status": "confirmed",
+    "fieldPaths": [
+      "PixsoNode.strokePaints[]",
+      "PixsoNode.strokePaints[].color",
+      "PixsoNode.strokeWeight",
+      "PixsoNode.borderTopWeight/borderRightWeight/borderBottomWeight/borderLeftWeight",
+      "PixsoNode.strokeAlign"
+    ],
+    "samples": [
+      {
+        "sample": "stroke-none.pix",
+        "known": {
+          "present": false,
+          "weight": null,
+          "color": null,
+          "align": null
+        },
+        "decoded": {
+          "present": false,
+          "weight": null,
+          "color": null,
+          "align": null
+        },
+        "fieldPath": [
+          "PixsoNode.strokePaints[]",
+          "PixsoNode.strokePaints[].color",
+          "PixsoNode.strokeWeight/border*Weight",
+          "PixsoNode.strokeAlign"
+        ],
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "stroke-1.pix",
+        "known": {
+          "present": true,
+          "weight": 1,
+          "color": "#D9DDE7",
+          "align": "INSIDE"
+        },
+        "decoded": {
+          "present": true,
+          "weight": 1,
+          "color": "#D9DDE7",
+          "align": "INSIDE"
+        },
+        "fieldPath": [
+          "PixsoNode.strokePaints[]",
+          "PixsoNode.strokePaints[].color",
+          "PixsoNode.strokeWeight/border*Weight",
+          "PixsoNode.strokeAlign"
+        ],
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "stroke-2.pix",
+        "known": {
+          "present": true,
+          "weight": 2,
+          "color": "#D9DDE7",
+          "align": "INSIDE"
+        },
+        "decoded": {
+          "present": true,
+          "weight": 2,
+          "color": "#D9DDE7",
+          "align": "INSIDE"
+        },
+        "fieldPath": [
+          "PixsoNode.strokePaints[]",
+          "PixsoNode.strokePaints[].color",
+          "PixsoNode.strokeWeight/border*Weight",
+          "PixsoNode.strokeAlign"
+        ],
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "stroke-color.pix",
+        "known": {
+          "present": true,
+          "weight": 1,
+          "color": "#FF0000",
+          "align": "INSIDE"
+        },
+        "decoded": {
+          "present": true,
+          "weight": 1,
+          "color": "#FF0000",
+          "align": "INSIDE"
+        },
+        "fieldPath": [
+          "PixsoNode.strokePaints[]",
+          "PixsoNode.strokePaints[].color",
+          "PixsoNode.strokeWeight/border*Weight",
+          "PixsoNode.strokeAlign"
+        ],
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      },
+      {
+        "sample": "stroke-outside.pix",
+        "known": {
+          "present": true,
+          "weight": 1,
+          "color": "#D9DDE7",
+          "align": "OUTSIDE"
+        },
+        "decoded": {
+          "present": true,
+          "weight": 1,
+          "color": "#D9DDE7",
+          "align": "OUTSIDE"
+        },
+        "fieldPath": [
+          "PixsoNode.strokePaints[]",
+          "PixsoNode.strokePaints[].color",
+          "PixsoNode.strokeWeight/border*Weight",
+          "PixsoNode.strokeAlign"
+        ],
+        "recordOffset": 6,
+        "confidence": "confirmed"
+      }
+    ],
+    "styleReference": "not-found",
+    "variableBinding": "not-found",
+    "limitations": [
+      "A 1 px INSIDE stroke omits strokeWeight/strokeAlign defaults but stores four 1 px border weights.",
+      "Visible solid color, opacity, width, and align are confirmed; style references and variable bindings were absent."
+    ]
+  },
+  "conclusion": {
+    "status": "PASS",
+    "reason": "Coordinates and all three requested design-attribute groups were confirmed across 16 controlled local samples."
+  }
+}

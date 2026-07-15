@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { compileSchema, encodeBinarySchema, parseSchema } from "kiwi-schema";
 import { parseDecodedPixsoPayload, readZipEntries } from "../packages/pix-parser/src/index";
+import { makeSyntheticStoredZip } from "./fixtures/synthetic-pix-container";
 
 const schemaText = `
 struct GUID {
@@ -37,6 +38,21 @@ enum StackMode {
   VERTICAL = 2;
 }
 
+struct Color {
+  uint r;
+  uint g;
+  uint b;
+  uint a;
+}
+
+message Paint {
+  string type = 1;
+  Color color = 2;
+  float opacity = 3;
+  bool visible = 4;
+  string blendMode = 5;
+}
+
 message PixsoNode {
   GUID guid = 1;
   ParentIndex parentIndex = 2;
@@ -47,6 +63,13 @@ message PixsoNode {
   StackMode stackMode = 7;
   float stackPaddingTop = 8;
   float stackSpacing = 9;
+  Paint[] strokePaints = 10;
+  float strokeWeight = 11;
+  float borderTopWeight = 12;
+  float borderRightWeight = 13;
+  float borderBottomWeight = 14;
+  float borderLeftWeight = 15;
+  string strokeAlign = 16;
 }
 
 message PixsoMsg {
@@ -55,7 +78,7 @@ message PixsoMsg {
 `;
 
 describe("pix parser prototype", () => {
-  it("confirms Kiwi node boundaries and avoids guessing x/y", () => {
+  it("emits confirmed local-transform geometry and keeps gap diagnostics-only", () => {
     const schema = parseSchema(schemaText);
     const compiled = compileSchema(schema);
     const schemaBytes = encodeBinarySchema(schema);
@@ -70,29 +93,48 @@ describe("pix parser prototype", () => {
           size: { x: 100, y: 80 },
           stackMode: "HORIZONTAL",
           stackPaddingTop: 16,
-          stackSpacing: 8
+          stackSpacing: 8,
+          strokePaints: [{
+            type: "SOLID",
+            color: { r: 217, g: 221, b: 231, a: 255 },
+            opacity: 1,
+            visible: true,
+            blendMode: "NORMAL"
+          }],
+          borderTopWeight: 1,
+          borderRightWeight: 1,
+          borderBottomWeight: 1,
+          borderLeftWeight: 1
         }
       ]
     });
     const result = parseDecodedPixsoPayload(schemaBytes, "synthetic.pix", payload);
     expect(result.rootRoundTripExact).toBe(true);
-    expect(result.coordinateModel).toBe("unknown");
+    expect(result.coordinateModel).toBe("local-transform");
     expect(result.nodes).toHaveLength(1);
     expect(result.nodes[0]).toMatchObject({
       id: "1:2",
       name: "Synthetic frame",
       type: "FRAME",
       parentId: null,
-      rect: { width: 100, height: 80 },
-      attributes: { layoutMode: "HORIZONTAL", gap: 8 }
+      rect: { x: -50, y: -50, width: 100, height: 80 },
+      attributes: {
+        layoutMode: "HORIZONTAL",
+        padding: { top: 16 },
+        stroke: { weight: 1, align: "INSIDE", paints: [{ type: "SOLID", color: { r: 217, g: 221, b: 231, a: 255 } }] }
+      },
+      raw: { diagnostics: { gapCandidate: 8 } }
     });
-    expect(result.nodes[0].rect.x).toBeUndefined();
+    expect(result.nodes[0].attributes).not.toHaveProperty("gap");
     expect(result.nodes[0].raw.recordOffset).toBeGreaterThanOrEqual(0);
-    expect(result.nodes[0].raw.fieldConfidence["rect.x"]).toBe("not-found");
+    expect(result.nodes[0].raw.fieldConfidence["rect.x"]).toBe("confirmed");
+    expect(result.nodes[0].raw.fieldConfidence.layoutMode).toBe("confirmed");
+    expect(result.nodes[0].raw.fieldConfidence.padding).toBe("confirmed");
+    expect(result.nodes[0].raw.fieldConfidence.stroke).toBe("confirmed");
   });
 
   it("lists stored ZIP entries without extracting files", () => {
-    const zip = makeStoredZip("pixso.binary", Buffer.from("schema"));
+    const zip = makeSyntheticStoredZip("pixso.binary", Buffer.from("schema"));
     const entries = readZipEntries(zip);
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
@@ -103,28 +145,3 @@ describe("pix parser prototype", () => {
     expect(Buffer.from(entries[0].data ?? []).toString("utf8")).toBe("schema");
   });
 });
-
-function makeStoredZip(nameValue: string, data: Buffer): Buffer {
-  const name = Buffer.from(nameValue);
-  const local = Buffer.alloc(30);
-  local.writeUInt32LE(0x04034b50, 0);
-  local.writeUInt16LE(20, 4);
-  local.writeUInt32LE(data.length, 18);
-  local.writeUInt32LE(data.length, 22);
-  local.writeUInt16LE(name.length, 26);
-  const centralOffset = local.length + name.length + data.length;
-  const central = Buffer.alloc(46);
-  central.writeUInt32LE(0x02014b50, 0);
-  central.writeUInt16LE(20, 4);
-  central.writeUInt16LE(20, 6);
-  central.writeUInt32LE(data.length, 20);
-  central.writeUInt32LE(data.length, 24);
-  central.writeUInt16LE(name.length, 28);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0);
-  end.writeUInt16LE(1, 8);
-  end.writeUInt16LE(1, 10);
-  end.writeUInt32LE(central.length + name.length, 12);
-  end.writeUInt32LE(centralOffset, 16);
-  return Buffer.concat([local, name, data, central, name, end]);
-}

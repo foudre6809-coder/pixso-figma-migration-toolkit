@@ -19,8 +19,17 @@ export interface ParsedPixNode {
   attributes: {
     layoutMode?: string;
     padding?: { top?: number; right?: number; bottom?: number; left?: number };
-    gap?: number;
-    strokeCount?: number;
+    stroke?: {
+      weight?: number;
+      align: string;
+      paints: Array<{
+        type?: string;
+        color?: { r?: number; g?: number; b?: number; a?: number };
+        opacity?: number;
+        visible?: boolean;
+        blendMode?: string;
+      }>;
+    };
   };
   raw: {
     recordOffset: number;
@@ -28,13 +37,19 @@ export interface ParsedPixNode {
     transform?: Record<string, number>;
     confidence: Confidence;
     fieldConfidence: Record<string, Confidence>;
+    diagnostics: {
+      gapCandidate?: number;
+      paddingCandidate?: { top?: number; right?: number; bottom?: number; left?: number };
+      styleReference: "not-found";
+      variableBinding: "not-found";
+    };
   };
 }
 
 export interface ParsedPixDocument {
   serialization: "kiwi";
   compression: "zstd";
-  coordinateModel: "unknown";
+  coordinateModel: "local-transform";
   schemaDefinitionCount: number;
   rootMessage: "PixsoMsg";
   rootRoundTripExact: boolean;
@@ -62,7 +77,21 @@ interface KiwiNode {
   stackPaddingBottom?: number;
   stackPaddingLeft?: number;
   stackSpacing?: number;
-  strokePaints?: unknown[];
+  strokeWeight?: number;
+  borderTopWeight?: number;
+  borderRightWeight?: number;
+  borderBottomWeight?: number;
+  borderLeftWeight?: number;
+  strokeAlign?: string;
+  strokePaints?: KiwiPaint[];
+}
+
+interface KiwiPaint {
+  type?: string;
+  color?: { r?: number; g?: number; b?: number; a?: number };
+  opacity?: number;
+  visible?: boolean;
+  blendMode?: string;
 }
 
 interface KiwiMessage {
@@ -124,7 +153,7 @@ export function parseDecodedPixsoPayload(
   return {
     serialization: "kiwi",
     compression: "zstd",
-    coordinateModel: "unknown",
+    coordinateModel: "local-transform",
     schemaDefinitionCount: schema.definitions.length,
     rootMessage: "PixsoMsg",
     rootRoundTripExact: true,
@@ -168,45 +197,69 @@ function mapNode(node: KiwiNode, recordOffset: number, recordLength: number): Pa
   const isRootParent = parentId === "0:0";
   const width = finiteNumber(node.size?.x);
   const height = finiteNumber(node.size?.y);
+  const x = finiteNumber(node.transform?.m02);
+  const y = finiteNumber(node.transform?.m12);
   const padding = {
     top: finiteNumber(node.stackPaddingTop),
     right: finiteNumber(node.stackPaddingRight),
     bottom: finiteNumber(node.stackPaddingBottom),
     left: finiteNumber(node.stackPaddingLeft)
   };
-  const hasPadding = Object.values(padding).some((value) => value !== undefined);
+  const hasPaddingCandidate = Object.values(padding).some((value) => value !== undefined);
+  const hasPadding = node.stackMode !== undefined && hasPaddingCandidate;
   const fieldConfidence: Record<string, Confidence> = {
     id: id === null ? "not-found" : "confirmed",
     name: typeof node.name === "string" ? "confirmed" : "not-found",
     type: typeof node.type === "string" ? "confirmed" : "not-found",
     parentId: parentId === null ? "not-found" : "confirmed",
-    "rect.x": "not-found",
-    "rect.y": "not-found",
+    "rect.x": x === undefined ? "not-found" : "confirmed",
+    "rect.y": y === undefined ? "not-found" : "confirmed",
     "rect.width": width === undefined ? "not-found" : "confirmed",
     "rect.height": height === undefined ? "not-found" : "confirmed",
-    layoutMode: node.stackMode === undefined ? "not-found" : "inferred",
-    padding: hasPadding ? "inferred" : "not-found",
+    layoutMode: node.stackMode === undefined ? "not-found" : "confirmed",
+    padding: hasPadding ? "confirmed" : "not-found",
     gap: node.stackSpacing === undefined ? "not-found" : "inferred",
-    stroke: node.strokePaints === undefined ? "not-found" : "inferred"
+    stroke: node.strokePaints === undefined ? "not-found" : "confirmed"
+  };
+  const borderWeights = [node.borderTopWeight, node.borderRightWeight, node.borderBottomWeight, node.borderLeftWeight]
+    .map(finiteNumber);
+  const uniformBorderWeight = borderWeights.every((value) => value !== undefined && value === borderWeights[0])
+    ? borderWeights[0]
+    : undefined;
+  const stroke = node.strokePaints === undefined ? undefined : {
+    weight: finiteNumber(node.strokeWeight) ?? uniformBorderWeight,
+    align: node.strokeAlign ?? "INSIDE",
+    paints: node.strokePaints.map((paint) => ({
+      type: paint.type,
+      color: paint.color,
+      opacity: finiteNumber(paint.opacity),
+      visible: paint.visible,
+      blendMode: paint.blendMode
+    }))
   };
   return {
     id: id ?? undefined,
     name: node.name,
     type: node.type,
     parentId: parentId === null ? undefined : isRootParent ? null : parentId,
-    rect: { width, height },
+    rect: { x, y, width, height },
     attributes: {
       layoutMode: node.stackMode,
       padding: hasPadding ? padding : undefined,
-      gap: finiteNumber(node.stackSpacing),
-      strokeCount: node.strokePaints?.length
+      stroke
     },
     raw: {
       recordOffset,
       recordLength,
       transform: node.transform,
       confidence: "confirmed",
-      fieldConfidence
+      fieldConfidence,
+      diagnostics: {
+        gapCandidate: finiteNumber(node.stackSpacing),
+        paddingCandidate: hasPaddingCandidate ? padding : undefined,
+        styleReference: "not-found",
+        variableBinding: "not-found"
+      }
     }
   };
 }

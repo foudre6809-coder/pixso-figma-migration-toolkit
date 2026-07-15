@@ -88,6 +88,55 @@ export function shouldWriteReferencedStrokeValue(
   return !sourceHasReference || !targetHasReference || !targetHasVisibleStroke;
 }
 
+export interface DetachedAppearanceBackgroundPlan {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export function createDetachedAppearanceBackgroundPlan(options: {
+  sourceWidth?: number;
+  sourceHeight?: number;
+  targetX?: number;
+  targetY?: number;
+  targetWidth?: number;
+  targetHeight?: number;
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
+  tolerance?: number;
+}): DetachedAppearanceBackgroundPlan | undefined {
+  const values = [
+    options.sourceWidth,
+    options.sourceHeight,
+    options.targetX,
+    options.targetY,
+    options.targetWidth,
+    options.targetHeight,
+    options.paddingTop,
+    options.paddingRight,
+    options.paddingBottom,
+    options.paddingLeft
+  ];
+  if (values.some((value) => typeof value !== "number" || !Number.isFinite(value))) return undefined;
+  const sourceWidth = options.sourceWidth!;
+  const sourceHeight = options.sourceHeight!;
+  const targetWidth = options.targetWidth!;
+  const targetHeight = options.targetHeight!;
+  const tolerance = options.tolerance ?? 3;
+  if (sourceWidth <= 0 || sourceHeight <= 0 || targetWidth <= 0 || targetHeight <= 0) return undefined;
+  if (Math.abs(sourceWidth - (targetWidth + options.paddingLeft! + options.paddingRight!)) > tolerance) return undefined;
+  if (Math.abs(sourceHeight - (targetHeight + options.paddingTop! + options.paddingBottom!)) > tolerance) return undefined;
+  return {
+    x: options.targetX! - options.paddingLeft!,
+    y: options.targetY! - options.paddingTop!,
+    width: sourceWidth,
+    height: sourceHeight
+  };
+}
+
 export type RepairSafetyLevel = "diagnostic" | "conservative" | "structural";
 
 export interface RepairSafetyPolicy {
@@ -151,7 +200,6 @@ export interface StructureMatchInput {
   targetHeight?: number;
   geometryWriteRequired: boolean;
   externalBoundsStable: boolean;
-  recoverableCollapsedContainer?: boolean;
 }
 
 export interface StructureMatchAssessment extends StructureMatchInput {
@@ -183,8 +231,7 @@ export function assessStructureMatch(input: StructureMatchInput): StructureMatch
   if (input.hasComplexTransform) reasons.push("存在复杂变换");
   if (input.hasUnknownAbsolute) reasons.push("存在未知绝对定位");
   if (input.hasOverlap) reasons.push("存在未确认重叠");
-  if (!sizeWithinTolerance && !input.recoverableCollapsedContainer) reasons.push("目标尺寸与源尺寸差异超过 2px 或 2%");
-  if (input.recoverableCollapsedContainer) reasons.push("检测到容器外观丢失导致的内容边界收缩，可在结构模式重建");
+  if (!sizeWithinTolerance) reasons.push("目标尺寸与源尺寸差异超过 2px 或 2%");
   if (input.geometryWriteRequired) reasons.push("需要几何写回才能恢复结构");
   if (!input.externalBoundsStable) reasons.push("无法确认转换前后外部边界不变");
 
@@ -196,7 +243,7 @@ export function assessStructureMatch(input: StructureMatchInput): StructureMatch
     !input.hasMask &&
     !input.hasUnknownAbsolute &&
     !input.hasOverlap &&
-    (sizeWithinTolerance || input.recoverableCollapsedContainer === true) &&
+    sizeWithinTolerance &&
     !input.geometryWriteRequired &&
     input.externalBoundsStable;
   return {

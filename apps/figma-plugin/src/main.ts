@@ -2,6 +2,7 @@ import {
   classifyApplyFailureStatus,
   classifyPreviewStatus,
   classifyBackgroundRectangle,
+  createDetachedAppearanceBackgroundPlan,
   createLayoutPlan,
   createAppearanceRecoveryPlan,
   shouldWriteReferencedStrokeValue,
@@ -9,7 +10,6 @@ import {
   createOperationExecutionPlan,
   createRepairSafetyPolicy,
   assessStructureMatch,
-  hasDirectSolidAppearance,
   type RepairSafetyLevel,
   type StructureMatchAssessment,
   protectAbsoluteChildrenBeforeLayout,
@@ -255,26 +255,6 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
   };
 }
 
-function addCollapsedContainerBackground(source: MigrationNode, group: GroupNode): RectangleNode | undefined {
-  const rect = source.rect.value;
-  const left = source.layout.paddingLeft.value;
-  const top = source.layout.paddingTop.value;
-  if (!rect || typeof left !== "number" || typeof top !== "number") return undefined;
-  const background = figma.createRectangle();
-  try {
-    background.name = `${group.name} 背景`;
-    group.insertChild(0, background);
-    background.x = -left;
-    background.y = -top;
-    background.resizeWithoutConstraints(rect.width, rect.height);
-    applyAppearance(source, background, "apply");
-    return background;
-  } catch (error) {
-    if (!background.removed) background.remove();
-    throw error;
-  }
-}
-
 function applyOperation(node: SceneNode, property: string, value: string | number): void {
   if (canAutoLayout(node)) {
     if (property === "layoutMode" && (value === "HORIZONTAL" || value === "VERTICAL")) node.layoutMode = value;
@@ -329,6 +309,41 @@ type AppearanceNode = SceneNode & GeometryMixin & { opacity: number };
 
 function canApplyAppearance(node: SceneNode): node is AppearanceNode {
   return "fills" in node && "strokes" in node && "strokeWeight" in node && "strokeAlign" in node && "opacity" in node;
+}
+
+function findDetachedAppearanceBackground(group: GroupNode, migrationId: string): RectangleNode | undefined {
+  const parent = group.parent;
+  if (!parent || !("children" in parent)) return undefined;
+  return parent.children.find(
+    (child): child is RectangleNode =>
+      child.type === "RECTANGLE" && readPluginMigrationId(child) === `appearance:${migrationId}`
+  );
+}
+
+function addDetachedAppearanceBackground(
+  source: MigrationNode,
+  group: GroupNode,
+  plan: { x: number; y: number; width: number; height: number }
+): RectangleNode | undefined {
+  const parent = group.parent;
+  if (!parent || !("children" in parent) || !("insertChild" in parent)) return undefined;
+  const existing = findDetachedAppearanceBackground(group, source.migrationId);
+  if (existing) return existing;
+  const background = figma.createRectangle();
+  try {
+    background.name = `${group.name} 恢复背景`;
+    background.fills = [];
+    background.strokes = [];
+    background.x = plan.x;
+    background.y = plan.y;
+    background.resizeWithoutConstraints(plan.width, plan.height);
+    writePluginMigrationId(background, `appearance:${source.migrationId}`);
+    parent.insertChild(parent.children.indexOf(group), background);
+    return background;
+  } catch (error) {
+    if (!background.removed) background.remove();
+    throw error;
+  }
 }
 
 function paintsEqual(current: ReadonlyArray<Paint> | PluginAPI["mixed"], expected: ReadonlyArray<Paint>): boolean {
@@ -587,6 +602,29 @@ function repairNode(
     canApplyAppearance(appearanceTarget)
       ? applyAppearance(appearanceSource, appearanceTarget, "preview")
       : [];
+  const sourceRect = source.rect.value;
+  const targetRect = localRect(figmaNode);
+  const detachedAppearancePlan =
+    options.safetyLevel === "structural" &&
+    source.type === "FRAME" &&
+    figmaNode.type === "GROUP" &&
+    source.layout.mode.value !== "NONE" &&
+    hasRecoverableAppearance(source) &&
+    sourceRect &&
+    targetRect
+      ? createDetachedAppearanceBackgroundPlan({
+          sourceWidth: sourceRect.width,
+          sourceHeight: sourceRect.height,
+          targetX: targetRect.x,
+          targetY: targetRect.y,
+          targetWidth: targetRect.width,
+          targetHeight: targetRect.height,
+          paddingTop: source.layout.paddingTop.value ?? undefined,
+          paddingRight: source.layout.paddingRight.value ?? undefined,
+          paddingBottom: source.layout.paddingBottom.value ?? undefined,
+          paddingLeft: source.layout.paddingLeft.value ?? undefined
+        })
+      : undefined;
   const selectedLayout = selectSafeLayoutOperations(
     plan.operations,
     structure.eligibleForAutoLayout,
@@ -598,7 +636,7 @@ function repairNode(
   const operationPlan = createOperationExecutionPlan({
     layoutRequested: policy.applyLayout && layoutOperations.length > 0,
     layoutRisk: plan.riskLevel,
-    appearanceSafe: appearancePreview.length > 0,
+    appearanceSafe: appearancePreview.length > 0 || Boolean(detachedAppearancePlan),
     componentSafe
   });
   const structuralSkipped =
@@ -618,7 +656,7 @@ function repairNode(
     ...(migrationIdChange ? ["写入迁移标识"] : []),
     ...(policy.applyGeometry && geometryPlan ? ["实验性恢复坐标或尺寸"] : []),
     ...(operationPlan.applyLayout ? ["恢复自动布局"] : []),
-    ...(operationPlan.applyAppearance ? ["恢复外观"] : []),
+    ...(detachedAppearancePlan ? ["恢复输入框背景外观"] : operationPlan.applyAppearance ? ["恢复外观"] : []),
     ...(operationPlan.applyComponent ? ["重建主 Component"] : [])
   ];
   const blockingIssue = compatibilityIssues.some((issue) => issue.severity === "error");
@@ -638,6 +676,7 @@ function repairNode(
     ...(geometryPlan && !policy.applyGeometry ? ["检测到几何差异；当前安全等级仅报告，不写入坐标或尺寸。"] : []),
     ...(policy.applyGeometry && geometryPlan ? applyGeometryRestorePlan(figmaNode, geometryPlan, "preview") : []),
     ...(operationPlan.applyLayout ? ["预览：将恢复安全的自动布局属性。"] : []),
+    ...(detachedAppearancePlan ? ["预览：将在内容 Group 同级后方补回输入框背景、描边和圆角，不移动现有内容。"] : []),
     ...appearancePreview.map((message) => `预览：将${message.replace(/^已/, "")}`),
     ...(operationPlan.applyComponent ? ["预览：将重建唯一高置信主 Component。"] : []),
     ...(operationPlan.needsReview ? ["布局风险较高：本轮只跳过布局，仍会独立执行安全外观和 Component 操作。"] : []),
@@ -734,6 +773,17 @@ function repairNode(
     }
   }
 
+  if (detachedAppearancePlan && figmaNode.type === "GROUP") {
+    try {
+      const background = addDetachedAppearanceBackground(source, figmaNode, detachedAppearancePlan);
+      if (!background) return failedStep("输入框背景恢复", "目标 Group 的父节点不支持安全插入背景");
+      messages.push(...applyAppearance(source, background, "apply"));
+      appliedChanges.push("输入框背景外观");
+    } catch (error) {
+      return failedStep("输入框背景恢复", error);
+    }
+  }
+
   const needsLayoutContainerConversion = layoutOperations.some((operation) => operation.property === "layoutMode");
   const needsGroupConversion =
     policy.convertGroup &&
@@ -742,12 +792,7 @@ function repairNode(
     figmaNode.type === "GROUP" &&
     (needsLayoutContainerConversion || operationPlan.applyComponent);
   if (needsGroupConversion && figmaNode.type === "GROUP") {
-    let syntheticBackground: RectangleNode | undefined;
     try {
-      if (structure.recoverableCollapsedContainer) {
-        syntheticBackground = addCollapsedContainerBackground(source, figmaNode);
-        if (!syntheticBackground) return failedStep("收缩容器背景重建", "缺少可确认的尺寸或 Padding");
-      }
       const converted = convertGroupToFrame(figmaNode);
       if (!converted) return failedStep("Group 转 Frame", "当前 Group 无法安全转换");
       layoutTarget = converted.frame;
@@ -758,7 +803,6 @@ function repairNode(
       messages.push("已将 Sketch 导入的 Group 原位转换为 Frame。", converted.message);
       appliedChanges.push("Group 转 Frame");
     } catch (error) {
-      if (syntheticBackground && !syntheticBackground.removed) syntheticBackground.remove();
       return failedStep("Group 转 Frame", error);
     }
   }
@@ -919,32 +963,6 @@ function createStructureAssessment(
   const layoutProbe = createLayoutPlan(source, { children: sourceChildren });
   const hasOverlap = layoutProbe.riskLevel === "high" && layoutProbe.warnings.some((warning) => warning.includes("重叠"));
   const orderScore = orderConsistency(matchedIndices);
-  const paddingHorizontal =
-    typeof source.layout.paddingLeft.value === "number" && typeof source.layout.paddingRight.value === "number"
-      ? source.layout.paddingLeft.value + source.layout.paddingRight.value
-      : undefined;
-  const paddingVertical =
-    typeof source.layout.paddingTop.value === "number" && typeof source.layout.paddingBottom.value === "number"
-      ? source.layout.paddingTop.value + source.layout.paddingBottom.value
-      : undefined;
-  const recoverableCollapsedContainer = Boolean(
-    source.type === "FRAME" &&
-      target.type === "GROUP" &&
-      source.layout.mode.value !== "NONE" &&
-      hasDirectSolidAppearance(source) &&
-      sourceRect &&
-      targetRect &&
-      paddingHorizontal !== undefined &&
-      paddingVertical !== undefined &&
-      Math.abs(sourceRect.width - (targetRect.width + paddingHorizontal)) <= 2 &&
-      Math.abs(sourceRect.height - (targetRect.height + paddingVertical)) <= 2 &&
-      sourceChildren.length === targetChildren.length &&
-      matchedIndices.length === sourceChildren.length &&
-      orderScore === 1 &&
-      !hasMask &&
-      !hasUnknownAbsolute &&
-      !hasOverlap
-  );
   return assessStructureMatch({
     parentMatchHighConfidence: isHighConfidenceUniqueMatch(match),
     sourceChildCount: sourceChildren.length,
@@ -962,8 +980,7 @@ function createStructureAssessment(
     targetWidth: targetRect?.width,
     targetHeight: targetRect?.height,
     geometryWriteRequired: Boolean(geometryPlan),
-    externalBoundsStable: !geometryPlan,
-    recoverableCollapsedContainer
+    externalBoundsStable: !geometryPlan
   });
 }
 

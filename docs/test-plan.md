@@ -44,7 +44,7 @@ GitHub Actions repeats these checks after a frozen-lockfile install. Unit covera
 21. Use a single-solid Pixso stroke with style/variable metadata. Confirm its visible values remain recoverable, cross-tool IDs are diagnostic-only, and an existing Figma binding is not overwritten.
 22. In structural mode, verify a confirmed absolute child keeps its current Figma `x/y` while receiving `layoutPositioning=ABSOLUTE`; repeat with an unconfirmed child and confirm the parent layout is skipped.
 23. Use repeated input names under repeated parents. Confirm matching stays inside the already matched direct parent and uses local geometry only when the nearest candidate is clearly unique.
-24. Use a Pixso 344x36 input Frame imported as a 320x20 content-bounds Group with 12px horizontal and 7px vertical Padding. In structural mode, confirm the plugin rebuilds its background/Frame and border without moving the visible child content; a Group whose size difference is not explained by Padding must remain unchanged.
+24. Use a Pixso 344x36 input Frame imported as a content-bounds Group whose size loss is explained by 12px horizontal and 7px vertical Padding. In structural mode, confirm the plugin adds a sibling background behind the Group and restores the border without converting the Group, enabling Auto Layout, or moving visible content; an unexplained size difference must remain unchanged.
 
 ## Visual Regression Baseline
 

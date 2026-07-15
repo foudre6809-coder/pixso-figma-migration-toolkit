@@ -13,6 +13,7 @@ import {
   classifyPreviewStatus,
   classifyBackgroundRectangle,
   assessStructureMatch,
+  createDetachedAppearanceBackgroundPlan,
   createLayoutPlan,
   createAppearanceRecoveryPlan,
   shouldWriteReferencedStrokeValue,
@@ -781,18 +782,51 @@ describe("layout engine", () => {
     expect(assessment.eligibleForGroupConversion).toBe(false);
   });
 
-  it("allows a fully matched collapsed visual container to rebuild in structural mode", () => {
+  it("keeps a collapsed visual container blocked from auto layout conversion", () => {
     const assessment = safeStructure({
       sourceWidth: 344,
       sourceHeight: 36,
       targetWidth: 320,
-      targetHeight: 20,
-      recoverableCollapsedContainer: true
+      targetHeight: 20
     });
 
     expect(assessment.sizeWithinTolerance).toBe(false);
-    expect(assessment.eligibleForAutoLayout).toBe(true);
-    expect(assessment.eligibleForGroupConversion).toBe(true);
+    expect(assessment.eligibleForAutoLayout).toBe(false);
+    expect(assessment.eligibleForGroupConversion).toBe(false);
+  });
+
+  it("plans a detached input background without changing the content Group bounds", () => {
+    expect(
+      createDetachedAppearanceBackgroundPlan({
+        sourceWidth: 344,
+        sourceHeight: 36,
+        targetX: 12,
+        targetY: 7,
+        targetWidth: 320,
+        targetHeight: 22,
+        paddingTop: 7,
+        paddingRight: 12,
+        paddingBottom: 7,
+        paddingLeft: 12
+      })
+    ).toEqual({ x: 0, y: 0, width: 344, height: 36 });
+  });
+
+  it("does not plan a detached background when Padding cannot explain the lost bounds", () => {
+    expect(
+      createDetachedAppearanceBackgroundPlan({
+        sourceWidth: 344,
+        sourceHeight: 36,
+        targetX: 12,
+        targetY: 7,
+        targetWidth: 250,
+        targetHeight: 22,
+        paddingTop: 7,
+        paddingRight: 12,
+        paddingBottom: 7,
+        paddingLeft: 12
+      })
+    ).toBeUndefined();
   });
 
   it("does not claim changes when auto layout data is unavailable", () => {

@@ -14,9 +14,13 @@ import {
   classifyBackgroundRectangle,
   assessStructureMatch,
   createLayoutPlan,
+  createAppearanceRecoveryPlan,
+  shouldWriteReferencedStrokeValue,
+  selectSafeLayoutOperations,
   createOperationExecutionPlan,
   createRepairSafetyPolicy,
   hasDirectSolidAppearance,
+  protectAbsoluteChildrenBeforeLayout,
   protectRetainedBackgroundBeforeLayout,
   requiresLaunchSelection
 } from "../packages/layout-engine/src";
@@ -503,6 +507,71 @@ describe("layout engine", () => {
     ).toBe(true);
   });
 
+  it("keeps complete solid stroke values recoverable when style and variable metadata exist", () => {
+    const source = node({
+      appearance: {
+        fill: native({ color: { r: 1, g: 1, b: 1 }, opacity: 1 }),
+        stroke: native({ color: { r: 0.7, g: 0.75, b: 0.85 }, opacity: 0.8 }),
+        strokeWeight: native(1),
+        strokeAlign: native("INSIDE"),
+        cornerRadii: native([4, 4, 4, 4]),
+        opacity: native(0.9),
+        strokeSummary: native({
+          count: 1,
+          paintTypes: ["SOLID"],
+          opacities: [0.8],
+          styleId: "pixso-style",
+          styleName: "Input/Border",
+          isMixed: false,
+          hasGradient: false,
+          hasVariableReference: true,
+          boundVariables: { color: ["pixso-border-color"] },
+          paintStyleIds: [],
+          completeSingleSolid: true
+        })
+      }
+    });
+
+    expect(createAppearanceRecoveryPlan(source)).toEqual({
+      fill: true,
+      stroke: true,
+      strokeWeight: true,
+      strokeAlign: true,
+      cornerRadii: true,
+      opacity: true
+    });
+  });
+
+  it("keeps incomplete gradient stroke diagnostic-only", () => {
+    const source = node({
+      appearance: {
+        ...node().appearance,
+        stroke: unavailable("渐变描边仅诊断"),
+        strokeSummary: native({
+          count: 1,
+          paintTypes: ["GRADIENT_LINEAR"],
+          opacities: [1],
+          styleId: null,
+          styleName: null,
+          isMixed: false,
+          hasGradient: true,
+          hasVariableReference: false,
+          boundVariables: {},
+          paintStyleIds: [],
+          completeSingleSolid: false
+        })
+      }
+    });
+
+    expect(createAppearanceRecoveryPlan(source).stroke).toBe(false);
+  });
+
+  it("preserves an existing Figma binding when the Pixso stroke also has a reference", () => {
+    expect(shouldWriteReferencedStrokeValue(true, true)).toBe(false);
+    expect(shouldWriteReferencedStrokeValue(true, false)).toBe(true);
+    expect(shouldWriteReferencedStrokeValue(false, true)).toBe(true);
+  });
+
   it("keeps safe appearance work enabled when layout is high risk", () => {
     expect(
       createOperationExecutionPlan({ layoutRequested: true, layoutRisk: "high", appearanceSafe: true, componentSafe: false })
@@ -678,7 +747,7 @@ describe("layout engine", () => {
     expect(plan.warnings.join(" ")).toContain("重叠子节点");
   });
 
-  it("skips auto layout until known absolute children can be restored individually", () => {
+  it("allows known absolute children to be protected during structural layout", () => {
     const absoluteLayout = { ...node().layout, positioning: native("ABSOLUTE" as const) };
     const plan = createLayoutPlan(node(), {
       children: [
@@ -687,9 +756,81 @@ describe("layout engine", () => {
       ]
     });
 
-    expect(plan.shouldApply).toBe(false);
-    expect(plan.riskLevel).toBe("high");
-    expect(plan.warnings.join(" ")).toContain("绝对定位");
+    expect(plan.shouldApply).toBe(true);
+    expect(plan.riskLevel).toBe("low");
+  });
+
+  it("plans child alignment, growth, fill sizing, absolute positioning and min-max sizes", () => {
+    const plan = createLayoutPlan(
+      node({
+        type: "FRAME",
+        layout: {
+          ...node().layout,
+          mode: native("NONE"),
+          widthMode: native("FILL"),
+          heightMode: native("FILL"),
+          positioning: native("ABSOLUTE"),
+          layoutAlign: native("STRETCH"),
+          layoutGrow: native(1),
+          minWidth: native(120),
+          maxWidth: native(480),
+          minHeight: native(36),
+          maxHeight: native(72)
+        }
+      })
+    );
+
+    expect(plan.operations).toEqual(expect.arrayContaining([
+      { property: "layoutSizingHorizontal", value: "FILL" },
+      { property: "layoutSizingVertical", value: "FILL" },
+      { property: "layoutAlign", value: "STRETCH" },
+      { property: "layoutGrow", value: 1 },
+      { property: "layoutPositioning", value: "ABSOLUTE" },
+      { property: "minWidth", value: 120 },
+      { property: "maxWidth", value: 480 },
+      { property: "minHeight", value: 36 },
+      { property: "maxHeight", value: 72 }
+    ]));
+    expect(plan.operations.some((operation) => operation.property === "layoutMode")).toBe(false);
+  });
+
+  it("gates container operations by self structure and item operations by parent structure", () => {
+    const operations = [
+      { property: "layoutMode", value: "HORIZONTAL" },
+      { property: "paddingLeft", value: 12 },
+      { property: "layoutSizingHorizontal", value: "FILL" },
+      { property: "layoutGrow", value: 1 }
+    ];
+    expect(selectSafeLayoutOperations(operations, true, false)).toEqual({
+      allowed: operations.slice(0, 2),
+      skippedContainerCount: 0,
+      skippedItemCount: 2,
+      itemOperationCount: 2
+    });
+    expect(selectSafeLayoutOperations(operations, false, true)).toEqual({
+      allowed: operations.slice(2),
+      skippedContainerCount: 2,
+      skippedItemCount: 0,
+      itemOperationCount: 2
+    });
+  });
+
+  it("protects explicit absolute children without replacing their current coordinates", () => {
+    const children = [
+      { x: 17, y: 9, layoutPositioning: "AUTO" as "AUTO" | "ABSOLUTE" },
+      { x: 81, y: 13, layoutPositioning: "AUTO" as "AUTO" | "ABSOLUTE" }
+    ];
+    protectAbsoluteChildrenBeforeLayout(children, () => {
+      children.forEach((child) => {
+        child.x += 100;
+        child.y += 100;
+      });
+    });
+
+    expect(children).toEqual([
+      { x: 17, y: 9, layoutPositioning: "ABSOLUTE" },
+      { x: 81, y: 13, layoutPositioning: "ABSOLUTE" }
+    ]);
   });
 });
 

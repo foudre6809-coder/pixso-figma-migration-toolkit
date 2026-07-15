@@ -3,12 +3,15 @@ import {
   classifyPreviewStatus,
   classifyBackgroundRectangle,
   createLayoutPlan,
+  createAppearanceRecoveryPlan,
+  shouldWriteReferencedStrokeValue,
+  selectSafeLayoutOperations,
   createOperationExecutionPlan,
   createRepairSafetyPolicy,
   assessStructureMatch,
   type RepairSafetyLevel,
   type StructureMatchAssessment,
-  protectRetainedBackgroundBeforeLayout,
+  protectAbsoluteChildrenBeforeLayout,
   requiresLaunchSelection
 } from "@pixso-figma-migration/layout-engine";
 import { type MigrationNode, validateMigrationMap } from "@pixso-figma-migration/migration-schema";
@@ -250,34 +253,85 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
   };
 }
 
-function applyOperation(node: FrameNode | ComponentNode | InstanceNode, property: string, value: string | number): void {
-  if (property === "layoutMode" && (value === "HORIZONTAL" || value === "VERTICAL")) node.layoutMode = value;
-  if (property === "paddingTop" && typeof value === "number") node.paddingTop = value;
-  if (property === "paddingRight" && typeof value === "number") node.paddingRight = value;
-  if (property === "paddingBottom" && typeof value === "number") node.paddingBottom = value;
-  if (property === "paddingLeft" && typeof value === "number") node.paddingLeft = value;
-  if (property === "itemSpacing" && typeof value === "number") node.itemSpacing = value;
-  if (property === "primaryAxisSizingMode" && (value === "AUTO" || value === "FIXED")) node.primaryAxisSizingMode = value;
-  if (property === "counterAxisSizingMode" && (value === "AUTO" || value === "FIXED")) node.counterAxisSizingMode = value;
-  if (property === "minHeight" && typeof value === "number" && "minHeight" in node) {
-    (node as typeof node & { minHeight: number | null }).minHeight = value;
+function applyOperation(node: SceneNode, property: string, value: string | number): void {
+  if (canAutoLayout(node)) {
+    if (property === "layoutMode" && (value === "HORIZONTAL" || value === "VERTICAL")) node.layoutMode = value;
+    if (property === "paddingTop" && typeof value === "number") node.paddingTop = value;
+    if (property === "paddingRight" && typeof value === "number") node.paddingRight = value;
+    if (property === "paddingBottom" && typeof value === "number") node.paddingBottom = value;
+    if (property === "paddingLeft" && typeof value === "number") node.paddingLeft = value;
+    if (property === "itemSpacing" && typeof value === "number") node.itemSpacing = value;
+    if (property === "primaryAxisSizingMode" && (value === "AUTO" || value === "FIXED")) node.primaryAxisSizingMode = value;
+    if (property === "counterAxisSizingMode" && (value === "AUTO" || value === "FIXED")) node.counterAxisSizingMode = value;
+  }
+  if (property === "layoutAlign" && (value === "INHERIT" || value === "STRETCH") && "layoutAlign" in node) {
+    node.layoutAlign = value;
+  }
+  if (property === "layoutGrow" && typeof value === "number" && "layoutGrow" in node) node.layoutGrow = value;
+  if (
+    property === "layoutSizingHorizontal" &&
+    (value === "FIXED" || value === "HUG" || value === "FILL") &&
+    "layoutSizingHorizontal" in node
+  ) {
+    node.layoutSizingHorizontal = value;
+  }
+  if (
+    property === "layoutSizingVertical" &&
+    (value === "FIXED" || value === "HUG" || value === "FILL") &&
+    "layoutSizingVertical" in node
+  ) {
+    node.layoutSizingVertical = value;
+  }
+  if (property === "layoutPositioning" && value === "ABSOLUTE" && "layoutPositioning" in node) {
+    const position = { x: node.x, y: node.y };
+    node.layoutPositioning = "ABSOLUTE";
+    node.x = position.x;
+    node.y = position.y;
+  }
+  if (
+    ["minWidth", "maxWidth", "minHeight", "maxHeight"].includes(property) &&
+    typeof value === "number" &&
+    property in node
+  ) {
+    (node as unknown as Record<string, number | null>)[property] = value;
   }
 }
 
-type AppearanceNode = SceneNode & GeometryMixin;
+type AbsoluteLayoutChild = SceneNode & { layoutPositioning: "AUTO" | "ABSOLUTE" };
+
+function canSetLayoutPositioning(node: SceneNode): node is AbsoluteLayoutChild {
+  return "layoutPositioning" in node;
+}
+
+type AppearanceNode = SceneNode & GeometryMixin & { opacity: number };
 
 function canApplyAppearance(node: SceneNode): node is AppearanceNode {
-  return "fills" in node && "strokes" in node && "strokeWeight" in node && "strokeAlign" in node;
+  return "fills" in node && "strokes" in node && "strokeWeight" in node && "strokeAlign" in node && "opacity" in node;
 }
 
 function paintsEqual(current: ReadonlyArray<Paint> | PluginAPI["mixed"], expected: ReadonlyArray<Paint>): boolean {
   return current !== figma.mixed && JSON.stringify(current) === JSON.stringify(expected);
 }
 
+function hasFigmaStrokeReference(node: AppearanceNode): boolean {
+  const styleId = "strokeStyleId" in node ? node.strokeStyleId : undefined;
+  const hasStyle = typeof styleId === "string" && styleId.length > 0;
+  const hasVariable = node.strokes.some((paint) => "boundVariables" in paint && Boolean(paint.boundVariables));
+  return hasStyle || hasVariable;
+}
+
 function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunMode): string[] {
   const messages: string[] = [];
   const { appearance } = source;
-  if (appearance.fill.value) {
+  const recovery = createAppearanceRecoveryPlan(source);
+  const sourceHasStrokeReference = Boolean(
+    appearance.strokeSummary?.value?.styleId ||
+      appearance.strokeSummary?.value?.styleName ||
+      appearance.strokeSummary?.value?.paintStyleIds.length ||
+      appearance.strokeSummary?.value?.hasVariableReference
+  );
+  const writeStrokeValue = shouldWriteReferencedStrokeValue(sourceHasStrokeReference, hasFigmaStrokeReference(node));
+  if (appearance.fill.value && recovery.fill) {
     const fills: ReadonlyArray<Paint> = [
       { type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }
     ];
@@ -286,10 +340,7 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunM
       messages.push("已恢复填充。");
     }
   }
-  const strokeComplete =
-    !appearance.strokeSummary ||
-    (appearance.strokeSummary.source === "native" && appearance.strokeSummary.value?.completeSingleSolid === true);
-  if (appearance.stroke.value && strokeComplete) {
+  if (appearance.stroke.value && recovery.stroke && writeStrokeValue) {
     const strokes: ReadonlyArray<Paint> = [
       { type: "SOLID", color: appearance.stroke.value.color, opacity: appearance.stroke.value.opacity }
     ];
@@ -299,18 +350,18 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunM
     }
   }
   if (
-    appearance.stroke.value && strokeComplete &&
+    appearance.stroke.value && recovery.strokeWeight &&
     typeof appearance.strokeWeight.value === "number" &&
     node.strokeWeight !== appearance.strokeWeight.value
   ) {
     if (mode === "apply") node.strokeWeight = appearance.strokeWeight.value;
     messages.push("已恢复描边粗细。");
   }
-  if (appearance.stroke.value && strokeComplete && appearance.strokeAlign.value && node.strokeAlign !== appearance.strokeAlign.value) {
+  if (appearance.stroke.value && recovery.strokeAlign && appearance.strokeAlign.value && node.strokeAlign !== appearance.strokeAlign.value) {
     if (mode === "apply") node.strokeAlign = appearance.strokeAlign.value;
     messages.push("已恢复描边位置。");
   }
-  if (appearance.cornerRadii.value && "topLeftRadius" in node) {
+  if (appearance.cornerRadii.value && recovery.cornerRadii && "topLeftRadius" in node) {
     const [topLeft, topRight, bottomRight, bottomLeft] = appearance.cornerRadii.value;
     if (
       node.topLeftRadius !== topLeft ||
@@ -326,6 +377,10 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunM
       }
       messages.push("已恢复圆角。");
     }
+  }
+  if (recovery.opacity && typeof appearance.opacity?.value === "number" && node.opacity !== appearance.opacity.value) {
+    if (mode === "apply") node.opacity = appearance.opacity.value;
+    messages.push("已恢复节点透明度。");
   }
   return messages;
 }
@@ -351,11 +406,7 @@ function applyGeometryRestorePlan(node: SceneNode, plan: GeometryRestorePlan, mo
 }
 
 function hasRecoverableAppearance(source: MigrationNode): boolean {
-  const strokeComplete =
-    !source.appearance.strokeSummary ||
-    (source.appearance.strokeSummary.source === "native" &&
-      source.appearance.strokeSummary.value?.completeSingleSolid === true);
-  return Boolean(source.appearance.fill.value || (source.appearance.stroke.value && strokeComplete));
+  return Object.values(createAppearanceRecoveryPlan(source)).some(Boolean);
 }
 
 function strokeDiagnosticMessages(source: MigrationNode): string[] {
@@ -371,7 +422,32 @@ function strokeDiagnosticMessages(source: MigrationNode): string[] {
       `描边包含 ${value.count} 层 Paint（${value.paintTypes.join("、") || "类型未知"}），样式=${value.styleName ?? value.styleId ?? "无"}，渐变=${value.hasGradient ? "是" : "否"}，变量引用=${value.hasVariableReference ? "是" : "否"}；为避免覆盖现有描边，本轮仅报告。`
     ];
   }
-  return [];
+  const messages: string[] = [];
+  if (summary.value && (summary.value.styleId || summary.value.styleName || summary.value.paintStyleIds.length)) {
+    messages.push(
+      `Pixso 描边样式引用已保留为元数据（${summary.value.styleName ?? summary.value.styleId ?? summary.value.paintStyleIds.join("、")}）；跨工具样式 ID 不可直接等同，本轮仅恢复明确的单层实色值，不自动绑定 Figma 样式。`
+    );
+  }
+  if (summary.value?.hasVariableReference) {
+    const references = Object.entries(summary.value.boundVariables)
+      .map(([field, ids]) => `${field}=${ids.join("、")}`)
+      .join("；");
+    messages.push(
+      `Pixso 描边变量引用已保留为元数据${references ? `（${references}）` : ""}；未确认存在对应 Figma 变量，本轮不自动绑定变量，但可恢复明确的单层实色值。`
+    );
+  }
+  return messages;
+}
+
+function targetStrokeReferenceMessages(source: MigrationNode, target: SceneNode): string[] {
+  if (!canApplyAppearance(target)) return [];
+  const summary = source.appearance.strokeSummary?.value;
+  const sourceHasReference = Boolean(
+    summary?.styleId || summary?.styleName || summary?.paintStyleIds.length || summary?.hasVariableReference
+  );
+  return sourceHasReference && hasFigmaStrokeReference(target)
+    ? ["目标节点已有 Figma 描边样式或变量绑定，已保留现有绑定，不覆盖描边 Paint。"]
+    : [];
 }
 
 function structureDetails(assessment: StructureMatchAssessment): string {
@@ -444,8 +520,10 @@ function repairNode(
   mode: RunMode,
   options: RunOptions,
   structure: StructureMatchAssessment,
+  parentStructure?: StructureMatchAssessment,
   geometryPlan?: GeometryRestorePlan,
-  appearanceOwner?: { source: MigrationNode; target: SceneNode; warning?: string }
+  appearanceOwner?: { source: MigrationNode; target: SceneNode; safe: boolean; warning?: string },
+  absoluteChildren: AbsoluteLayoutChild[] = []
 ): RepairItem {
   const policy = createRepairSafetyPolicy(options.safetyLevel, options.experimentalGeometry);
   const plan = createLayoutPlan(source, { children: sourceChildren });
@@ -470,17 +548,40 @@ function repairNode(
   }
   const appearanceSource = appearanceOwner?.source ?? source;
   const appearanceTarget = appearanceOwner?.target ?? figmaNode;
+  const targetReferenceDiagnostics = targetStrokeReferenceMessages(appearanceSource, appearanceTarget);
   const appearancePreview =
-    policy.applyAppearance && hasRecoverableAppearance(appearanceSource) && canApplyAppearance(appearanceTarget)
+    policy.applyAppearance &&
+    appearanceOwner?.safe !== false &&
+    hasRecoverableAppearance(appearanceSource) &&
+    canApplyAppearance(appearanceTarget)
       ? applyAppearance(appearanceSource, appearanceTarget, "preview")
       : [];
+  const selectedLayout = selectSafeLayoutOperations(
+    plan.operations,
+    structure.eligibleForAutoLayout,
+    parentStructure?.eligibleForAutoLayout === true
+  );
+  const layoutOperations = selectedLayout.allowed;
+  const skippedContainerOperations = selectedLayout.skippedContainerCount;
+  const skippedItemOperations = selectedLayout.skippedItemCount;
   const operationPlan = createOperationExecutionPlan({
-    layoutRequested: policy.applyLayout && plan.shouldApply && structure.eligibleForAutoLayout,
-    layoutRisk: plan.riskLevel === "high" || !structure.eligibleForAutoLayout ? "high" : "low",
+    layoutRequested: policy.applyLayout && layoutOperations.length > 0,
+    layoutRisk: plan.riskLevel,
     appearanceSafe: appearancePreview.length > 0,
     componentSafe
   });
-  const structuralSkipped = policy.applyLayout && plan.shouldApply && !structure.eligibleForAutoLayout;
+  const structuralSkipped =
+    policy.applyLayout &&
+    (plan.riskLevel === "high" || skippedContainerOperations > 0 || skippedItemOperations > 0);
+  const structuralSkipReasons = [
+    ...(skippedContainerOperations > 0
+      ? [`${skippedContainerOperations} 个容器操作未通过自身结构门槛：${structure.reasons.join("；") || "结构证据不足"}`]
+      : []),
+    ...(skippedItemOperations > 0
+      ? [`${skippedItemOperations} 个子项操作未通过父级结构门槛：${parentStructure?.reasons.join("；") || "父级结构证据不足"}`]
+      : []),
+    ...(plan.riskLevel === "high" ? plan.warnings : [])
+  ];
   const migrationIdChange = policy.writeMigrationId && readPluginMigrationId(figmaNode) !== source.migrationId;
   const plannedChanges = [
     ...(migrationIdChange ? ["写入迁移标识"] : []),
@@ -513,10 +614,16 @@ function repairNode(
     ...plan.warnings,
     ...compatibilityIssues.map((issue) => issue.message),
     ...componentMessages,
-    `结构匹配详情：${structureDetails(structure)}。`,
-    ...(structuralSkipped ? [`结构修复已跳过：${structure.reasons.join("；") || "未达到安全门槛"}。`] : []),
+    `自身结构匹配详情：${structureDetails(structure)}。`,
+    ...(selectedLayout.itemOperationCount && parentStructure
+      ? [`父级结构匹配详情：${structureDetails(parentStructure)}。`]
+      : []),
+    ...(structuralSkipped
+      ? [`结构修复部分或全部跳过：${structuralSkipReasons.join("；") || "未达到安全门槛"}。`]
+      : []),
     ...(appearanceOwner?.warning ? [appearanceOwner.warning] : []),
-    ...strokeDiagnosticMessages(appearanceSource)
+    ...strokeDiagnosticMessages(appearanceSource),
+    ...targetReferenceDiagnostics
   ];
   if (mode === "preview") {
     const needsReview =
@@ -539,7 +646,12 @@ function repairNode(
   if (!plannedChanges.length) {
     const wroteMigrationId = mode === "apply" && migrationIdChange;
     if (wroteMigrationId) writePluginMigrationId(figmaNode, source.migrationId);
-    const diagnostics = [...strokeDiagnosticMessages(appearanceSource), ...(appearanceOwner?.warning ? [appearanceOwner.warning] : [])];
+    const diagnostics = [
+      ...strokeDiagnosticMessages(appearanceSource),
+      ...targetReferenceDiagnostics,
+      ...(appearanceOwner?.warning ? [appearanceOwner.warning] : []),
+      ...(structuralSkipped ? [`结构修复已跳过：${structuralSkipReasons.join("；")}。`] : [])
+    ];
     return {
       migrationId: source.migrationId,
       nodeName: source.name,
@@ -591,12 +703,13 @@ function repairNode(
     }
   }
 
+  const needsLayoutContainerConversion = layoutOperations.some((operation) => operation.property === "layoutMode");
   const needsGroupConversion =
     policy.convertGroup &&
     structure.eligibleForGroupConversion &&
     source.type === "FRAME" &&
     figmaNode.type === "GROUP" &&
-    (operationPlan.applyLayout || operationPlan.applyComponent);
+    (needsLayoutContainerConversion || operationPlan.applyComponent);
   if (needsGroupConversion && figmaNode.type === "GROUP") {
     try {
       const converted = convertGroupToFrame(figmaNode);
@@ -645,18 +758,22 @@ function repairNode(
 
   if (operationPlan.applyLayout && canAutoLayout(layoutTarget)) {
     try {
-      const layoutModeOperation = plan.operations.find((operation) => operation.property === "layoutMode");
+      const layoutModeOperation = layoutOperations.find((operation) => operation.property === "layoutMode");
       if (layoutModeOperation) {
-        if (retainedBackground) {
-          protectRetainedBackgroundBeforeLayout(retainedBackground, () =>
-            applyOperation(layoutTarget as FrameNode | ComponentNode | InstanceNode, layoutModeOperation.property, layoutModeOperation.value)
+        const protectedChildren = [
+          ...absoluteChildren,
+          ...(retainedBackground && canSetLayoutPositioning(retainedBackground) ? [retainedBackground] : [])
+        ].filter((child, index, all) => all.findIndex((candidate) => candidate.id === child.id) === index);
+        if (protectedChildren.length) {
+          protectAbsoluteChildrenBeforeLayout(protectedChildren, () =>
+            applyOperation(layoutTarget, layoutModeOperation.property, layoutModeOperation.value)
           );
         } else {
           applyOperation(layoutTarget, layoutModeOperation.property, layoutModeOperation.value);
         }
         appliedChanges.push(`自动布局:${layoutModeOperation.property}`);
       }
-      for (const operation of plan.operations) {
+      for (const operation of layoutOperations) {
         if (operation === layoutModeOperation) continue;
         applyOperation(layoutTarget, operation.property, operation.value);
         appliedChanges.push(`自动布局:${operation.property}`);
@@ -670,7 +787,13 @@ function repairNode(
   }
 
   const finalAppearanceTarget = appearanceTarget === figmaNode ? layoutTarget : appearanceTarget;
-  if (policy.applyAppearance && canApplyAppearance(finalAppearanceTarget) && hasRecoverableAppearance(appearanceSource) && !promotedBackground) {
+  if (
+    policy.applyAppearance &&
+    appearanceOwner?.safe !== false &&
+    canApplyAppearance(finalAppearanceTarget) &&
+    hasRecoverableAppearance(appearanceSource) &&
+    !promotedBackground
+  ) {
     const appearanceChanges = applyAppearance(appearanceSource, finalAppearanceTarget, "preview");
     if (appearanceChanges.length) {
       try {
@@ -690,10 +813,12 @@ function repairNode(
   }
   const reviewMessages = [
     ...(operationPlan.needsReview ? plan.warnings : []),
+    ...(structuralSkipped ? [`结构修复部分或全部跳过：${structuralSkipReasons.join("；")}。`] : []),
     ...compatibilityIssues.map((issue) => issue.message),
     ...componentMessages,
     ...(appearanceOwner?.warning ? [appearanceOwner.warning] : []),
-    ...strokeDiagnosticMessages(appearanceSource)
+    ...strokeDiagnosticMessages(appearanceSource),
+    ...targetReferenceDiagnostics
   ];
   const needsReview =
     operationPlan.needsReview ||
@@ -748,7 +873,12 @@ function createStructureAssessment(
     sourceChildren.some((child) => child.type === "BOOLEAN") || targetChildren.some((child) => child.type === "BOOLEAN_OPERATION");
   const hasRotation = "rotation" in target && Math.abs(target.rotation) > 0.01;
   const hasComplexTransform = hasRotation;
-  const hasUnknownAbsolute = sourceChildren.some((child) => child.layout.positioning.source === "unavailable");
+  const hasUnknownAbsolute = sourceChildren.some((child) => {
+    if (child.layout.positioning.source === "unavailable") return true;
+    if (child.layout.positioning.value !== "ABSOLUTE") return false;
+    const childMatch = matchBySourceId.get(child.migrationId);
+    return !childMatch || !isHighConfidenceUniqueMatch(childMatch) || !childMatch.candidateId || !targetIndexById.has(childMatch.candidateId);
+  });
   const layoutProbe = createLayoutPlan(source, { children: sourceChildren });
   const hasOverlap = layoutProbe.riskLevel === "high" && layoutProbe.warnings.some((warning) => warning.includes("重叠"));
   return assessStructureMatch({
@@ -777,14 +907,15 @@ function resolveAppearanceOwner(
   defaultTarget: SceneNode,
   sourceById: Map<string, MigrationNode>,
   matchBySourceId: Map<string, MatchResult>
-): { source: MigrationNode; target: SceneNode; warning?: string } {
+): { source: MigrationNode; target: SceneNode; safe: boolean; warning?: string } {
   if (!source.appearanceOwnerReason || source.appearanceOwnerReason === "self") {
-    return { source, target: defaultTarget };
+    return { source, target: defaultTarget, safe: true };
   }
   if (source.appearanceOwnerReason !== "full-size-background" || !source.appearanceOwnerMigrationId) {
     return {
       source,
       target: defaultTarget,
+      safe: false,
       warning: "未定位输入框视觉承载节点；为避免写错外层，本轮不提升或猜测背景外观。"
     };
   }
@@ -795,6 +926,7 @@ function resolveAppearanceOwner(
     return {
       source,
       target: defaultTarget,
+      safe: false,
       warning: "全尺寸背景视觉承载节点未达到唯一高置信匹配，已跳过外观提升。"
     };
   }
@@ -803,10 +935,11 @@ function resolveAppearanceOwner(
     return {
       source,
       target: defaultTarget,
+      safe: false,
       warning: "背景候选不再是目标节点的直接子节点，已跳过外观恢复。"
     };
   }
-  return { source: ownerSource, target: sceneOwner };
+  return { source: ownerSource, target: sceneOwner, safe: true };
 }
 
 function runFromJson(json: string, mode: RunMode, options: RunOptions): RepairItem[] {
@@ -889,8 +1022,55 @@ function runFromJson(json: string, mode: RunMode, options: RunOptions): RepairIt
         canResizeRoot: canResizeWithoutConstraints(sceneNode)
       });
       const structure = createStructureAssessment(source, sourceChildren, sceneNode, match, matchBySourceId, geometryPlan);
+      let parentStructure: StructureMatchAssessment | undefined;
+      if (sourceParent && parentMatch?.candidateId && isHighConfidenceUniqueMatch(parentMatch)) {
+        const parentNode = figma.getNodeById(parentMatch.candidateId);
+        if (parentNode && "visible" in parentNode) {
+          const parentChildren = sourceParent.childMigrationIds.flatMap((id) => {
+            const child = sourceById.get(id);
+            return child ? [child] : [];
+          });
+          parentStructure = createStructureAssessment(
+            sourceParent,
+            parentChildren,
+            parentNode as SceneNode,
+            parentMatch,
+            matchBySourceId
+          );
+        }
+      }
+      const absoluteChildren = sourceChildren.flatMap((child) => {
+        if (child.layout.positioning.source !== "native" || child.layout.positioning.value !== "ABSOLUTE") return [];
+        const childMatch = matchBySourceId.get(child.migrationId);
+        const childNode = childMatch?.candidateId ? figma.getNodeById(childMatch.candidateId) : undefined;
+        if (
+          !childMatch ||
+          !isHighConfidenceUniqueMatch(childMatch) ||
+          !childNode ||
+          !("visible" in childNode) ||
+          childNode.parent?.id !== sceneNode.id ||
+          !canSetLayoutPositioning(childNode as SceneNode)
+        ) {
+          return [];
+        }
+        return [childNode as AbsoluteLayoutChild];
+      });
       const appearanceOwner = resolveAppearanceOwner(source, sceneNode, sourceById, matchBySourceId);
-      results.push(repairNode(source, sceneNode, sourceChildren, match, mode, options, structure, geometryPlan, appearanceOwner));
+      results.push(
+        repairNode(
+          source,
+          sceneNode,
+          sourceChildren,
+          match,
+          mode,
+          options,
+          structure,
+          parentStructure,
+          geometryPlan,
+          appearanceOwner,
+          absoluteChildren
+        )
+      );
     } catch (error) {
       console.error(`修复节点失败：${source.name} (${source.migrationId})`, error);
       results.push({

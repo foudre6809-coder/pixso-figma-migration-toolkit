@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  appearanceOwnerMetadata,
   classifyPixsoNodeType,
   createRootRefs,
   findAppearanceOwnerCandidate,
@@ -103,7 +104,7 @@ describe("Pixso 节点数据适配", () => {
         fills: [],
         strokes: [],
         children: [
-          { type: "RECTANGLE", x: 0, y: 0, width: 200, height: 36, visible: true, isMask: false },
+          { type: "RECTANGLE", x: 0, y: 0, width: 200, height: 36, visible: true, isMask: false, fills: [{ type: "SOLID" }] },
           { type: "TEXT", x: 12, y: 8, width: 80, height: 20 }
         ]
       })
@@ -111,7 +112,7 @@ describe("Pixso 节点数据适配", () => {
   });
 
   it("多个全尺寸背景候选时不自动选择视觉承载节点", () => {
-    const rectangle = { type: "RECTANGLE", x: 0, y: 0, width: 200, height: 36, visible: true, isMask: false };
+    const rectangle = { type: "RECTANGLE", x: 0, y: 0, width: 200, height: 36, visible: true, isMask: false, fills: [{ type: "SOLID" }] };
     expect(
       findAppearanceOwnerCandidate({ width: 200, height: 36, fills: [], strokes: [], children: [rectangle, rectangle] })
     ).toEqual({ reason: "ambiguous" });
@@ -133,8 +134,63 @@ describe("Pixso 节点数据适配", () => {
       isMixed: false,
       hasGradient: true,
       hasVariableReference: true,
+      boundVariables: { color: ["v1"] },
+      paintStyleIds: [],
       completeSingleSolid: false
     });
+  });
+
+  it("识别唯一全尺寸 Frame 为输入框视觉承载节点", () => {
+    const candidate = findAppearanceOwnerCandidate({
+        width: 240,
+        height: 40,
+        fills: [],
+        strokes: [],
+        children: [
+          { type: "TEXT", x: 12, y: 10, width: 80, height: 20 },
+          {
+            type: "FRAME",
+            x: 0,
+            y: 0,
+            width: 240,
+            height: 40,
+            visible: true,
+            fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+            strokes: [{ type: "SOLID", color: { r: 0.8, g: 0.82, b: 0.9 } }],
+            cornerRadius: 4
+          }
+        ]
+      });
+    expect(candidate).toEqual({ reason: "full-size-background", childIndex: 1 });
+    expect(appearanceOwnerMetadata(candidate, "input", ["label", "input-background"])).toEqual({
+      appearanceOwnerMigrationId: "input-background",
+      appearanceOwnerReason: "full-size-background",
+      fullSizeBackgroundChildMigrationId: "input-background"
+    });
+  });
+
+  it("保留单层实色描边上的变量和样式引用元数据", () => {
+    const summary = summarizeStrokes({
+      strokes: [
+        {
+          type: "SOLID",
+          color: { r: 0.5, g: 0.6, b: 0.7 },
+          boundVariables: { color: { type: "VARIABLE_ALIAS", id: "border-color" } },
+          styleId: "paint-style"
+        }
+      ],
+      strokeStyleId: "node-style",
+      strokeStyleName: "Input/Border"
+    });
+
+    expect(summary.value).toEqual(expect.objectContaining({
+      completeSingleSolid: true,
+      hasVariableReference: true,
+      boundVariables: { color: ["border-color"] },
+      paintStyleIds: ["paint-style"],
+      styleId: "node-style",
+      styleName: "Input/Border"
+    }));
   });
 
   it("描边字段不可用时明确报告缺失", () => {

@@ -7,12 +7,12 @@
 - `pnpm test`
 - `pnpm build`
 
-GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes default-off geometry, diagnostic no-write policy, strict structure gates, image/solid/mixed fill classification, sparse-selection page indices, visual-owner detection, stroke completeness diagnostics, preview status classification, partial execution status, and selection-required repair scopes.
+GitHub Actions repeats these checks after a frozen-lockfile install. Unit coverage includes default-off geometry, diagnostic no-write policy, strict structure gates, full-size Frame visual-owner detection, style/variable stroke metadata, incomplete-stroke protection, layout align/grow/FILL/absolute/min-max planning, absolute-child position protection, sparse-selection indices, preview status, and partial execution status.
 
 ## Manual Pixso Checks
 
 1. Select a component spec artboard and run capability probe.
-2. Confirm `layoutMode`, padding, gap, geometry, text, and component fields are marked correctly.
+2. Confirm `layoutMode`, primary/counter sizing, padding, gap, align/grow/positioning, min/max size, geometry, text, and component fields are marked correctly.
 3. Export migration map for one small artboard.
 4. Export two or more selected artboards with batch size 1 and confirm separate numbered JSON files.
 5. With five page children, select only the second and fifth roots; confirm `originalIndex` is `1` and `4` and `indexSource` is `page`. Hide `currentPage.children` in a mock/probe and confirm selection-order fallback emits a warning.
@@ -40,6 +40,9 @@ GitHub Actions repeats these checks after a frozen-lockfile install. Unit covera
 17. Launch a selection/artboard map without a Figma selection and confirm the plugin blocks the run; confirm a page map still permits a full-page scan.
 18. Use an Instance whose outer fill/stroke is null and whose nested Frame owns the input border; confirm repair does not clear the imported wrapper or nested input appearance.
 19. Confirm **结构修复** and **实验性几何恢复** are both off by default. Turn on structural repair and verify any count mismatch, match rate below 90%, Mask, unknown absolute positioning, overlap, or size mismatch blocks Auto Layout.
+20. Use an input whose unique full-size background is a Frame with white fill, solid border, 4px corners, and opacity; confirm conservative repair targets that Frame and does not write appearance to the outer wrapper.
+21. Use a single-solid Pixso stroke with style/variable metadata. Confirm its visible values remain recoverable, cross-tool IDs are diagnostic-only, and an existing Figma binding is not overwritten.
+22. In structural mode, verify a confirmed absolute child keeps its current Figma `x/y` while receiving `layoutPositioning=ABSOLUTE`; repeat with an unconfirmed child and confirm the parent layout is skipped.
 
 ## Visual Regression Baseline
 

@@ -41,8 +41,9 @@ In Figma Desktop:
 3. Import the Sketch file.
 4. Run the plugin and choose or paste `migration-map.json`.
 5. Choose **诊断** and run **仅扫描预览** first. This stage does not modify Figma.
-6. Use **保守修复（默认）** for the first real run. It only writes migration IDs and restores complete single-solid appearance on a confirmed owner; it does not change geometry, node types, Auto Layout, or Components.
-7. **结构修复** and **实验性几何恢复** are opt-in and should be tested only on a clean duplicate.
+6. Use **保守修复（默认）** for the first real run. It writes migration IDs and restores complete single-solid fill/stroke, stroke weight/alignment, corner radii, and node opacity on a confirmed visual owner. It does not change geometry, node types, Auto Layout, or Components.
+7. **结构修复** is opt-in. It can restore Auto Layout direction, padding, gap, sizing, child alignment/growth, confirmed absolute positioning, and min/max sizes only after the existing structural gates pass.
+8. **实验性几何恢复** is a separate opt-in switch and should be tested only on a clean duplicate. It remains off by default.
 
 For acceptance testing, always start from a clean Sketch import. Compare an untouched import, the earlier visually better build, and the current conservative build in separate files. Successfully matched nodes receive a persistent migration ID for reliable repeat runs.
 
@@ -59,6 +60,7 @@ pnpm build
 
 - Pixso API access must be verified locally with the capability probe.
 - Component instance restoration is conservative. The plugin reports uncertain matches instead of binding incorrectly.
+- Pixso style and variable IDs are retained as diagnostics but are not assumed to equal Figma IDs. Complete single-solid values can still be restored; an existing Figma style/variable binding is preserved.
 - HUG height is restored as Figma Auto sizing with the Pixso height retained as a minimum, rather than forcing a fixed row height.
 - Cancellation takes effect between root-node batches, not midway through one large artboard.
 - Variants, variables, constraints, and prototypes are scanned as future work, not fully restored in this MVP.

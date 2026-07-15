@@ -11,6 +11,7 @@ import {
   type RawNode,
   type RootRef,
   classifyPixsoNodeType,
+  appearanceOwnerMetadata,
   createRootRefs,
   findAppearanceOwnerCandidate,
   readLayoutPositioning,
@@ -50,6 +51,10 @@ const fieldsToProbe = [
   "layoutPositioning",
   "layoutAlign",
   "layoutGrow",
+  "minWidth",
+  "maxWidth",
+  "minHeight",
+  "maxHeight",
   "isAbsolute",
   "ignoreAutoLayout",
   "componentKey",
@@ -88,6 +93,10 @@ const fieldsToSample = new Set([
   "layoutPositioning",
   "layoutAlign",
   "layoutGrow",
+  "minWidth",
+  "maxWidth",
+  "minHeight",
+  "maxHeight",
   "isAbsolute",
   "ignoreAutoLayout"
 ]);
@@ -155,6 +164,16 @@ function readSizing(node: RawNode, dimension: "width" | "height") {
   return mapSizing(usesPrimaryAxis ? node.primaryAxisSizingMode : node.counterAxisSizingMode);
 }
 
+function readAxisSizingMode(value: unknown, fieldName: string) {
+  if (value === "FIXED" || value === "AUTO") return native<"FIXED" | "AUTO">(value);
+  if (value === "HUG") return native("AUTO" as const);
+  return unavailable<"FIXED" | "AUTO">(`未开放或无法识别 ${fieldName} 字段。`);
+}
+
+function readOptionalSize(value: unknown, fieldName: string) {
+  return typeof value === "number" && value >= 0 ? native(value) : unavailable<number>(`未开放 ${fieldName} 字段。`);
+}
+
 function normalizeSolidPaint(paints: unknown, fieldName: string): MigrationNode["appearance"]["fill"] {
   if (!Array.isArray(paints)) return unavailable(`未开放${fieldName}字段。`);
   const visiblePaints = paints.filter((item) => item?.visible !== false);
@@ -203,8 +222,7 @@ function toMigrationNode(
     createMigrationId(child, [...path, `${child.name ?? "unnamed"}[${index}]`])
   );
   const appearanceOwner = findAppearanceOwnerCandidate(node);
-  const ownerChildId =
-    appearanceOwner.childIndex === undefined ? undefined : childIds[appearanceOwner.childIndex];
+  const ownerMetadata = appearanceOwnerMetadata(appearanceOwner, migrationId, childIds);
   const strokeSummary = summarizeStrokes(node);
 
   return {
@@ -217,11 +235,7 @@ function toMigrationNode(
     path,
     parentMigrationId,
     childMigrationIds: childIds,
-    appearanceOwnerMigrationId:
-      appearanceOwner.reason === "self" ? migrationId : appearanceOwner.reason === "full-size-background" ? ownerChildId : undefined,
-    appearanceOwnerReason: appearanceOwner.reason,
-    fullSizeBackgroundChildMigrationId:
-      appearanceOwner.reason === "full-size-background" ? ownerChildId : undefined,
+    ...ownerMetadata,
     rect:
       typeof node.x === "number" && typeof node.y === "number" && typeof node.width === "number" && typeof node.height === "number"
         ? native({ x: node.x, y: node.y, width: node.width, height: node.height })
@@ -243,7 +257,13 @@ function toMigrationNode(
       heightMode: readSizing(node, "height"),
       positioning: readLayoutPositioning(node),
       layoutAlign: typeof node.layoutAlign === "string" ? native(node.layoutAlign) : unavailable("未开放布局对齐字段。"),
-      layoutGrow: typeof node.layoutGrow === "number" ? native(node.layoutGrow) : unavailable("未开放布局伸展字段。")
+      layoutGrow: typeof node.layoutGrow === "number" ? native(node.layoutGrow) : unavailable("未开放布局伸展字段。"),
+      primaryAxisSizingMode: readAxisSizingMode(node.primaryAxisSizingMode, "primaryAxisSizingMode"),
+      counterAxisSizingMode: readAxisSizingMode(node.counterAxisSizingMode, "counterAxisSizingMode"),
+      minWidth: readOptionalSize(node.minWidth, "minWidth"),
+      maxWidth: readOptionalSize(node.maxWidth, "maxWidth"),
+      minHeight: readOptionalSize(node.minHeight, "minHeight"),
+      maxHeight: readOptionalSize(node.maxHeight, "maxHeight")
     },
     component: {
       componentKey: typeof node.componentKey === "string" ? native(node.componentKey) : unavailable("未开放组件标识字段。"),
@@ -281,6 +301,8 @@ function toMigrationNode(
       ...(strokeSummary.value && strokeSummary.value.count > 0 && !strokeSummary.value.completeSingleSolid
         ? ["stroke-paint-incomplete"]
         : []),
+      ...(strokeSummary.value?.styleId || strokeSummary.value?.styleName ? ["stroke-style-reference"] : []),
+      ...(strokeSummary.value?.hasVariableReference ? ["stroke-variable-reference"] : []),
       ...(!migrationIdPersisted ? ["migration-id-not-persisted"] : [])
     ]
   };

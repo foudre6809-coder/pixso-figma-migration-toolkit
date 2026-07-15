@@ -4,14 +4,14 @@
 
 - The repository provides local plugin manifests for Pixso and Figma.
 - Migration data is validated with a versioned schema.
-- Figma-side layout planning supports layout mode, padding, gap, and hug sizing operations only in opt-in structural repair.
+- Figma-side layout planning supports layout mode, padding, gap, HUG/FILL sizing, primary/counter sizing, child align/grow, confirmed absolute positioning, and min/max sizes only in opt-in structural repair.
 - Node matching handles missing migration IDs and reports ambiguity.
 - Pixso export supports selected nodes, selected artboards, or the current page, split into root-node batches.
 - Figma repair reports unsafe component/instance matches, text differences, missing image fills, vector conversion, and size anomalies.
 - Sketch-imported groups can match Pixso frames, and repeated names are disambiguated with indexed hierarchy paths.
 - A missing outer Sketch artboard can be treated as a flattened root; matching then uses page-absolute geometry instead of child-local geometry.
 - Matched Figma nodes receive a persistent migration ID, so later repair runs do not depend on positions changed by Auto Layout.
-- Solid fill, solid stroke, stroke width/alignment, and corner radii are restored when Pixso exposes them natively.
+- Solid fill, solid stroke, stroke width/alignment, corner radii, and node opacity are restored when Pixso exposes them natively and the visual owner is confirmed.
 - Gradient, image, and multi-layer Paint values are left untouched when the current schema cannot represent them completely; they are never converted into an empty fill or stroke.
 - HUG height can map to Figma Auto sizing with the original Pixso height retained as `minHeight` in structural repair.
 - Migration IDs prefer Pixso's stable node ID and are checked for duplicates before export and import. Duplicate IDs stop export or remain ambiguous instead of being bound by order.
@@ -27,8 +27,10 @@
 - The default conservative level never applies Auto Layout, Group conversion, Component rebuilding, root resizing, or child coordinate writes.
 - Structural operations are experimental. Auto Layout and Group conversion require strict parent/child structure evidence; failed gates produce a needs-review result and a detailed count, order, mask, overlap, absolute-position, and size report.
 - Each repair result includes `plannedChanges` and `appliedChanges`. A later failure after an earlier mutation returns partial, identifies the failed step, and tells the user that Figma Undo can revert the run.
-- Pixso exports visual-owner metadata for direct appearance or a unique full-size bottom Rectangle. Ambiguous candidates are not selected automatically.
-- Stroke diagnostics include paint count/types, opacity, style ID/name, mixed/gradient/variable markers, weight, align, corners, and effects availability. Incomplete strokes never overwrite Figma strokes.
+- Pixso exports visual-owner metadata for direct appearance or a unique full-size visible Rectangle, Frame, or Component with direct fill/stroke/corners. Ambiguous candidates are not selected automatically.
+- Stroke diagnostics include paint count/types, opacity, style ID/name, bound variable IDs, mixed/gradient markers, weight, align, corners, and effects availability. Incomplete strokes never overwrite Figma strokes.
+- A style or variable reference does not make an otherwise complete single-solid stroke unrecoverable. Raw visual values can be restored when the Figma target has no binding; an existing Figma style/variable binding is preserved.
+- Known absolute children are protected without copying Pixso coordinates. Unknown positioning or an unconfirmed absolute-child match continues to block structural layout repair.
 - Main Components may be rebuilt only in experimental structural repair when a source Component has a unique high-confidence match to an ordinary Figma Frame. Instance candidates are reported but not rebound automatically.
 
 ## Must Be Verified In User Pixso Deployment
@@ -52,6 +54,7 @@
 
 ## Awaiting Clean-Import Visual Verification
 
+- The risk comparison from `c9bd132` to `fa2600f` was rechecked: `restoreConvertedFrameBounds` was removed, conservative policy disables geometry/layout/type/Component writes, and the current changes do not reintroduce default root resize or child `x/y` writes.
 - Real Figma validation showed that the previous automatic geometry restoration increased misalignment. Geometry writes are now disabled by default and remain experimental.
 - Final acceptance requires three clean imports: A raw Sketch, B the earlier plugin baseline, and C this conservative build. Compare displaced-node count, mean position error, root size, correct input strokes, correct padding/gap, extra borders, and text wrapping.
 - The acceptance floor is that conservative repair must not look worse than raw Sketch import. No 80%-90% restoration claim is made before this comparison passes.

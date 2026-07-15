@@ -4,8 +4,44 @@ export interface LayoutPlan {
   migrationId: string;
   shouldApply: boolean;
   riskLevel: "low" | "high";
-  operations: Array<{ property: string; value: string | number }>;
+  operations: LayoutOperation[];
   warnings: string[];
+}
+
+export interface LayoutOperation {
+  property: string;
+  value: string | number;
+}
+
+const containerLayoutProperties = new Set([
+  "layoutMode",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "itemSpacing",
+  "primaryAxisSizingMode",
+  "counterAxisSizingMode"
+]);
+
+export function selectSafeLayoutOperations(
+  operations: LayoutOperation[],
+  selfStructureSafe: boolean,
+  parentStructureSafe: boolean
+): {
+  allowed: LayoutOperation[];
+  skippedContainerCount: number;
+  skippedItemCount: number;
+  itemOperationCount: number;
+} {
+  const container = operations.filter((operation) => containerLayoutProperties.has(operation.property));
+  const item = operations.filter((operation) => !containerLayoutProperties.has(operation.property));
+  return {
+    allowed: [...(selfStructureSafe ? container : []), ...(parentStructureSafe ? item : [])],
+    skippedContainerCount: selfStructureSafe ? 0 : container.length,
+    skippedItemCount: parentStructureSafe ? 0 : item.length,
+    itemOperationCount: item.length
+  };
 }
 
 export interface LayoutPlanContext {
@@ -17,6 +53,38 @@ export interface OperationExecutionPlan {
   applyAppearance: boolean;
   applyComponent: boolean;
   needsReview: boolean;
+}
+
+export interface AppearanceRecoveryPlan {
+  fill: boolean;
+  stroke: boolean;
+  strokeWeight: boolean;
+  strokeAlign: boolean;
+  cornerRadii: boolean;
+  opacity: boolean;
+}
+
+export function createAppearanceRecoveryPlan(node: MigrationNode): AppearanceRecoveryPlan {
+  const strokeComplete =
+    !node.appearance.strokeSummary ||
+    (node.appearance.strokeSummary.source === "native" &&
+      node.appearance.strokeSummary.value?.completeSingleSolid === true);
+  const stroke = Boolean(node.appearance.stroke.value && strokeComplete);
+  return {
+    fill: Boolean(node.appearance.fill.value),
+    stroke,
+    strokeWeight: stroke && typeof node.appearance.strokeWeight.value === "number",
+    strokeAlign: stroke && Boolean(node.appearance.strokeAlign.value),
+    cornerRadii: Boolean(node.appearance.cornerRadii.value),
+    opacity: typeof node.appearance.opacity?.value === "number"
+  };
+}
+
+export function shouldWriteReferencedStrokeValue(
+  sourceHasReference: boolean,
+  targetHasReference: boolean
+): boolean {
+  return !sourceHasReference || !targetHasReference;
 }
 
 export type RepairSafetyLevel = "diagnostic" | "conservative" | "structural";
@@ -198,20 +266,31 @@ export interface RetainedBackgroundLike {
   layoutPositioning: "AUTO" | "ABSOLUTE";
 }
 
+export function protectAbsoluteChildrenBeforeLayout<T extends RetainedBackgroundLike>(
+  children: T[],
+  applyLayoutMode: () => void
+): void {
+  const positions = children.map((child) => ({ child, x: child.x, y: child.y }));
+  for (const { child } of positions) {
+    try {
+      child.layoutPositioning = "ABSOLUTE";
+    } catch {
+      // Some runtimes accept ABSOLUTE only after the parent has Auto Layout.
+    }
+  }
+  applyLayoutMode();
+  for (const { child, x, y } of positions) {
+    child.layoutPositioning = "ABSOLUTE";
+    child.x = x;
+    child.y = y;
+  }
+}
+
 export function protectRetainedBackgroundBeforeLayout<T extends RetainedBackgroundLike>(
   background: T,
   applyLayoutMode: () => void
 ): void {
-  const position = { x: background.x, y: background.y };
-  try {
-    background.layoutPositioning = "ABSOLUTE";
-  } catch {
-    // Some Figma runtimes reject ABSOLUTE until the parent has Auto Layout.
-  }
-  applyLayoutMode();
-  background.layoutPositioning = "ABSOLUTE";
-  background.x = position.x;
-  background.y = position.y;
+  protectAbsoluteChildrenBeforeLayout([background], applyLayoutMode);
 }
 
 function approximatelyEqual(left: number, right: number, tolerance: number): boolean {
@@ -304,23 +383,21 @@ export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext
   const operations: LayoutPlan["operations"] = [];
   const warnings: string[] = [];
   const mode = node.layout.mode.value;
+  const setOperation = (property: string, value: string | number) => {
+    const existing = operations.find((operation) => operation.property === property);
+    if (existing) existing.value = value;
+    else operations.push({ property, value });
+  };
 
-  if (mode === "HORIZONTAL" || mode === "VERTICAL") {
+  const hasContainerLayout = mode === "HORIZONTAL" || mode === "VERTICAL";
+  if (hasContainerLayout) {
     operations.push({ property: "layoutMode", value: mode });
-  } else {
+  } else if (["FRAME", "GROUP", "COMPONENT", "INSTANCE"].includes(node.type) && node.layout.mode.source === "unavailable") {
     const layoutContainer = ["FRAME", "GROUP", "COMPONENT", "INSTANCE"].includes(node.type);
-    const warnings =
-      layoutContainer && node.layout.mode.source === "unavailable" ? ["没有可恢复的自动布局方向。"] : [];
-    return {
-      migrationId: node.migrationId,
-      shouldApply: false,
-      riskLevel: "low",
-      operations,
-      warnings
-    };
+    if (layoutContainer) warnings.push("没有可恢复的自动布局方向。");
   }
 
-  if (hasUnconfirmedOverlappingChildren(context.children ?? [])) {
+  if (hasContainerLayout && hasUnconfirmedOverlappingChildren(context.children ?? [])) {
     return {
       migrationId: node.migrationId,
       shouldApply: false,
@@ -330,23 +407,13 @@ export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext
     };
   }
 
-  if (hasAbsolutePositionedChildren(context.children ?? [])) {
-    return {
-      migrationId: node.migrationId,
-      shouldApply: false,
-      riskLevel: "high",
-      operations: [],
-      warnings: ["检测到绝对定位或忽略自动布局的子节点；当前版本尚未安全恢复逐子节点定位，已跳过自动布局修复。"]
-    };
-  }
-
-  const numericFields = [
+  const numericFields = hasContainerLayout ? [
     ["paddingTop", node.layout.paddingTop.value],
     ["paddingRight", node.layout.paddingRight.value],
     ["paddingBottom", node.layout.paddingBottom.value],
     ["paddingLeft", node.layout.paddingLeft.value],
     ["itemSpacing", node.layout.gap.value]
-  ] as const;
+  ] as const : [];
 
   for (const [property, value] of numericFields) {
     if (hasNumber(value)) operations.push({ property, value });
@@ -354,17 +421,49 @@ export function createLayoutPlan(node: MigrationNode, context: LayoutPlanContext
   }
 
   const widthMode = node.layout.widthMode.value;
-  const inferredHugHeight = node.layout.heightMode.value === null && inferHugHeight(node, context.children ?? []);
+  const inferredHugHeight = hasContainerLayout && node.layout.heightMode.value === null && inferHugHeight(node, context.children ?? []);
   const heightMode = inferredHugHeight ? "HUG" : node.layout.heightMode.value;
 
-  if (widthMode === "HUG" || widthMode === "FIXED") {
+  if (hasContainerLayout && (widthMode === "HUG" || widthMode === "FIXED")) {
     operations.push({ property: sizingProperty(mode, "width"), value: widthMode === "HUG" ? "AUTO" : "FIXED" });
   }
-  if (heightMode === "HUG" || heightMode === "FIXED") {
+  if (hasContainerLayout && (heightMode === "HUG" || heightMode === "FIXED")) {
     operations.push({ property: sizingProperty(mode, "height"), value: heightMode === "HUG" ? "AUTO" : "FIXED" });
     if (heightMode === "HUG" && node.rect.value && node.rect.value.height > 0) {
       operations.push({ property: "minHeight", value: node.rect.value.height });
     }
+  }
+
+  if (hasContainerLayout && node.layout.primaryAxisSizingMode?.value) {
+    setOperation("primaryAxisSizingMode", node.layout.primaryAxisSizingMode.value);
+  }
+  if (hasContainerLayout && node.layout.counterAxisSizingMode?.value) {
+    setOperation("counterAxisSizingMode", node.layout.counterAxisSizingMode.value);
+  }
+  if (widthMode === "FILL") operations.push({ property: "layoutSizingHorizontal", value: "FILL" });
+  if (heightMode === "FILL") operations.push({ property: "layoutSizingVertical", value: "FILL" });
+
+  const layoutAlign = node.layout.layoutAlign?.value;
+  if (layoutAlign === "STRETCH" || layoutAlign === "INHERIT") {
+    operations.push({ property: "layoutAlign", value: layoutAlign });
+  } else if (layoutAlign) {
+    warnings.push(`layoutAlign=${layoutAlign} 无法安全映射到 Figma。`);
+  }
+  if (typeof node.layout.layoutGrow?.value === "number") {
+    operations.push({ property: "layoutGrow", value: node.layout.layoutGrow.value });
+  }
+  if (node.layout.positioning?.source === "native" && node.layout.positioning.value === "ABSOLUTE") {
+    operations.push({ property: "layoutPositioning", value: "ABSOLUTE" });
+  }
+
+  const sizeLimits = [
+    ["minWidth", node.layout.minWidth?.value],
+    ["maxWidth", node.layout.maxWidth?.value],
+    ["minHeight", node.layout.minHeight?.value],
+    ["maxHeight", node.layout.maxHeight?.value]
+  ] as const;
+  for (const [property, value] of sizeLimits) {
+    if (hasNumber(value)) setOperation(property, value);
   }
 
   if (inferredHugHeight) warnings.push("高度根据 Pixso 原始尺寸、子节点高度、Padding 和 Gap 推断为自适应。");

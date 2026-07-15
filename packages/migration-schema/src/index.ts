@@ -44,6 +44,8 @@ export const StrokePaintSummarySchema = z.object({
   isMixed: z.boolean(),
   hasGradient: z.boolean(),
   hasVariableReference: z.boolean(),
+  boundVariables: z.record(z.string(), z.array(z.string())).default({}),
+  paintStyleIds: z.array(z.string()).default([]),
   completeSingleSolid: z.boolean()
 });
 export type StrokePaintSummary = z.infer<typeof StrokePaintSummarySchema>;
@@ -117,7 +119,13 @@ export const MigrationNodeSchema = z.object({
     heightMode: sourced(z.enum(["FIXED", "HUG", "FILL"])),
     positioning: sourced(z.enum(["AUTO", "ABSOLUTE"])).default({ value: null, source: "unavailable" }),
     layoutAlign: sourced(z.string()).default({ value: null, source: "unavailable" }),
-    layoutGrow: sourced(z.number()).default({ value: null, source: "unavailable" })
+    layoutGrow: sourced(z.number()).default({ value: null, source: "unavailable" }),
+    primaryAxisSizingMode: sourced(z.enum(["FIXED", "AUTO"])).optional(),
+    counterAxisSizingMode: sourced(z.enum(["FIXED", "AUTO"])).optional(),
+    minWidth: sourced(z.number().nonnegative()).optional(),
+    maxWidth: sourced(z.number().nonnegative()).optional(),
+    minHeight: sourced(z.number().nonnegative()).optional(),
+    maxHeight: sourced(z.number().nonnegative()).optional()
   }),
   component: z.object({
     componentKey: sourced(z.string()),

@@ -5,7 +5,7 @@
 - The repository provides local plugin manifests for Pixso and Figma.
 - Migration data is validated with a versioned schema.
 - Figma-side layout planning supports layout mode, padding, gap, HUG/FILL sizing, primary/counter sizing, child align/grow, confirmed absolute positioning, and min/max sizes only in opt-in structural repair.
-- Node matching handles missing migration IDs and reports ambiguity.
+- Node matching handles missing migration IDs and reports ambiguity. Repeated names are first constrained to an already matched direct parent, then may use clearly unique local geometry within that parent only.
 - Pixso export supports selected nodes, selected artboards, or the current page, split into root-node batches.
 - Figma repair reports unsafe component/instance matches, text differences, missing image fills, vector conversion, and size anomalies.
 - Sketch-imported groups can match Pixso frames, and repeated names are disambiguated with indexed hierarchy paths.
@@ -29,7 +29,8 @@
 - Each repair result includes `plannedChanges` and `appliedChanges`. A later failure after an earlier mutation returns partial, identifies the failed step, and tells the user that Figma Undo can revert the run.
 - Pixso exports visual-owner metadata for direct appearance or a unique full-size visible Rectangle, Frame, or Component with direct fill/stroke/corners. Ambiguous candidates are not selected automatically.
 - Stroke diagnostics include paint count/types, opacity, style ID/name, bound variable IDs, mixed/gradient markers, weight, align, corners, and effects availability. Incomplete strokes never overwrite Figma strokes.
-- A style or variable reference does not make an otherwise complete single-solid stroke unrecoverable. Raw visual values can be restored when the Figma target has no binding; an existing Figma style/variable binding is preserved.
+- A style or variable reference does not make an otherwise complete single-solid stroke unrecoverable. Raw visual values are restored when the Figma target has no visible stroke Paint; an existing binding is preserved only when it still carries a visible stroke.
+- Structural repair recognizes a narrow collapsed-container case produced by Sketch: a Pixso Auto Layout Frame may arrive as a content-bounds Group after its fill/stroke is lost. It is rebuildable only when the child match and order are complete and the size difference is explained by the exported Padding within 2px; other size-mismatched Groups remain blocked.
 - Known absolute children are protected without copying Pixso coordinates. Unknown positioning or an unconfirmed absolute-child match continues to block structural layout repair.
 - Main Components may be rebuilt only in experimental structural repair when a source Component has a unique high-confidence match to an ordinary Figma Frame. Instance candidates are reported but not rebound automatically.
 
@@ -51,6 +52,7 @@
 - Earlier experimental builds converted Sketch-imported groups before applying Auto Layout. That behavior is now disabled by default after real-file validation showed visual regressions; it remains behind strict structural gates for controlled testing only.
 - The `Input 输入框` export contains 960 metadata nodes. Pixso exposed 621 solid fills, 161 solid strokes, and 535 corner-radius values; these fields are available for Figma-side appearance restoration.
 - The refreshed capability report confirms fills and strokes are readable for all 960 nodes. Input component wrappers commonly expose null direct paints while their nested `画板 112` Frame carries the white fill, border, and 4px radius.
+- On the clean Figma copy, parent-scoped and local-geometry matching increased the structural preview from 45 to 219 planned modifications while keeping unmatched nodes at 1. The actual collapsed-input conversion still requires a clean-import visual run before acceptance.
 
 ## Awaiting Clean-Import Visual Verification
 

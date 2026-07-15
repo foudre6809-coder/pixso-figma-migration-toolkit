@@ -2,6 +2,7 @@ import type { MigrationNode, Rect } from "@pixso-figma-migration/migration-schem
 
 export interface MatchCandidate {
   id: string;
+  parentId?: string;
   name: string;
   type: string;
   path: string[];
@@ -32,7 +33,7 @@ export function isHighConfidenceUniqueMatch(match: MatchResult): boolean {
     match.score >= 0.8 &&
     match.reasons.includes("name") &&
     match.reasons.includes("type") &&
-    (match.reasons.includes("path") || match.reasons.includes("rect"))
+    (match.reasons.includes("path") || match.reasons.includes("rect") || match.reasons.includes("parent"))
   );
 }
 
@@ -101,6 +102,11 @@ function rectSimilarity(a?: Rect | null, b?: Rect): number {
   return Math.max(0, 1 - (sizeDelta + positionDelta * 0.25) / 1000);
 }
 
+function rectDistance(a?: Rect | null, b?: Rect): number {
+  if (!a || !b) return Number.POSITIVE_INFINITY;
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.width - b.width) + Math.abs(a.height - b.height);
+}
+
 function pathSimilarity(a: string[], b: string[]): number {
   const length = Math.max(a.length, b.length, 1);
   let same = 0;
@@ -157,7 +163,12 @@ export function normalizeFlattenedRoot(
   };
   const normalized = nodes
     .filter((node) => node.migrationId !== root.migrationId)
-    .map((node) => ({ ...node, path: node.path.slice(1), rect: { ...node.rect, value: absoluteRectOf(node) ?? null } }));
+    .map((node) => ({
+      ...node,
+      parentMigrationId: node.parentMigrationId === root.migrationId ? undefined : node.parentMigrationId,
+      path: node.path.slice(1),
+      rect: { ...node.rect, value: absoluteRectOf(node) ?? null }
+    }));
 
   return {
     nodes: normalized,
@@ -260,6 +271,48 @@ export function matchNodes(nodes: MigrationNode[], candidates: MatchCandidate[])
     }
     if (!assigned) break;
   }
+
+  // Sketch often changes sibling indices while keeping the parent container intact.
+  // Resolve duplicate names inside an already matched parent before declaring them ambiguous.
+  let hierarchyAssigned = 0;
+  do {
+    hierarchyAssigned = 0;
+    const claimedThisRound = new Set<string>();
+    for (const node of [...pending.values()].sort((left, right) => left.path.length - right.path.length)) {
+      if (!node.parentMigrationId) continue;
+      const parentMatch = resolved.get(node.parentMigrationId);
+      if (parentMatch?.status !== "matched" || !parentMatch.candidateId) continue;
+      const ranked = [...available.values()]
+        .filter((candidate) => candidate.parentId === parentMatch.candidateId)
+        .map((candidate) => ({ candidate, ...scoreCandidate(node, candidate) }))
+        .sort((left, right) => right.score - left.score);
+      const best = ranked[0];
+      const second = ranked[1];
+      const margin = best ? best.score - (second?.score ?? 0) : 0;
+      const bestDistance = best ? rectDistance(node.rect.value, best.candidate.rect) : Number.POSITIVE_INFINITY;
+      const secondDistance = second ? rectDistance(node.rect.value, second.candidate.rect) : Number.POSITIVE_INFINITY;
+      const geometricallyUnique =
+        bestDistance <= 200 && secondDistance - bestDistance >= Math.max(8, bestDistance * 0.25);
+      const confident =
+        best &&
+        best.score >= 0.4 &&
+        best.reasons.includes("name") &&
+        best.reasons.includes("type") &&
+        (!second || margin >= 0.08 || geometricallyUnique);
+      if (!confident || claimedThisRound.has(best.candidate.id)) continue;
+      claimedThisRound.add(best.candidate.id);
+      resolved.set(node.migrationId, {
+        migrationId: node.migrationId,
+        candidateId: best.candidate.id,
+        score: Math.min(1, best.score + 0.25),
+        status: "matched",
+        reasons: [...best.reasons, "parent"]
+      });
+      pending.delete(node.migrationId);
+      available.delete(best.candidate.id);
+      hierarchyAssigned += 1;
+    }
+  } while (hierarchyAssigned > 0 && pending.size && available.size);
 
   for (const node of pending.values()) {
     const ranked = rank(node);

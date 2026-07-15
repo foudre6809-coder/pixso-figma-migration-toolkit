@@ -82,9 +82,10 @@ export function createAppearanceRecoveryPlan(node: MigrationNode): AppearanceRec
 
 export function shouldWriteReferencedStrokeValue(
   sourceHasReference: boolean,
-  targetHasReference: boolean
+  targetHasReference: boolean,
+  targetHasVisibleStroke = true
 ): boolean {
-  return !sourceHasReference || !targetHasReference;
+  return !sourceHasReference || !targetHasReference || !targetHasVisibleStroke;
 }
 
 export type RepairSafetyLevel = "diagnostic" | "conservative" | "structural";
@@ -150,6 +151,7 @@ export interface StructureMatchInput {
   targetHeight?: number;
   geometryWriteRequired: boolean;
   externalBoundsStable: boolean;
+  recoverableCollapsedContainer?: boolean;
 }
 
 export interface StructureMatchAssessment extends StructureMatchInput {
@@ -181,7 +183,8 @@ export function assessStructureMatch(input: StructureMatchInput): StructureMatch
   if (input.hasComplexTransform) reasons.push("存在复杂变换");
   if (input.hasUnknownAbsolute) reasons.push("存在未知绝对定位");
   if (input.hasOverlap) reasons.push("存在未确认重叠");
-  if (!sizeWithinTolerance) reasons.push("目标尺寸与源尺寸差异超过 2px 或 2%");
+  if (!sizeWithinTolerance && !input.recoverableCollapsedContainer) reasons.push("目标尺寸与源尺寸差异超过 2px 或 2%");
+  if (input.recoverableCollapsedContainer) reasons.push("检测到容器外观丢失导致的内容边界收缩，可在结构模式重建");
   if (input.geometryWriteRequired) reasons.push("需要几何写回才能恢复结构");
   if (!input.externalBoundsStable) reasons.push("无法确认转换前后外部边界不变");
 
@@ -193,7 +196,7 @@ export function assessStructureMatch(input: StructureMatchInput): StructureMatch
     !input.hasMask &&
     !input.hasUnknownAbsolute &&
     !input.hasOverlap &&
-    sizeWithinTolerance &&
+    (sizeWithinTolerance || input.recoverableCollapsedContainer === true) &&
     !input.geometryWriteRequired &&
     input.externalBoundsStable;
   return {

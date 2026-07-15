@@ -103,6 +103,7 @@ describe("node matcher", () => {
 
     expect(result.flattenedRoot?.migrationId).toBe("root");
     expect(result.nodes).toHaveLength(1);
+    expect(result.nodes[0].parentMigrationId).toBeUndefined();
     expect(result.nodes[0].path).toEqual(["Rectangle Copy 6[0]"]);
     expect(result.nodes[0].rect.value).toEqual({ x: -663, y: 4665, width: 1326, height: 6132 });
   });
@@ -258,6 +259,142 @@ describe("node matcher", () => {
 
     expect(results.map((result) => result.candidateId)).toEqual(["candidate-first", "candidate-second"]);
     expect(new Set(results.map((result) => result.candidateId)).size).toBe(2);
+  });
+
+  it("resolves repeated input children inside their uniquely matched parents", () => {
+    const firstParent = node({
+      migrationId: "parent-a",
+      name: "输入框（基础组件）",
+      type: "FRAME",
+      path: ["Input[0]", "输入框（基础组件）[0]"],
+      rect: native({ x: 20, y: 20, width: 320, height: 36 })
+    });
+    const secondParent = node({
+      migrationId: "parent-b",
+      name: "输入框（基础组件）",
+      type: "FRAME",
+      path: ["Input[0]", "输入框（基础组件）[1]"],
+      rect: native({ x: 420, y: 20, width: 320, height: 36 })
+    });
+    const firstChild = node({
+      migrationId: "child-a",
+      parentMigrationId: "parent-a",
+      name: "画板 112",
+      type: "FRAME",
+      path: [...firstParent.path, "画板 112[0]"],
+      rect: native({ x: 0, y: 0, width: 320, height: 36 })
+    });
+    const secondChild = node({
+      migrationId: "child-b",
+      parentMigrationId: "parent-b",
+      name: "画板 112",
+      type: "FRAME",
+      path: [...secondParent.path, "画板 112[0]"],
+      rect: native({ x: 0, y: 0, width: 320, height: 36 })
+    });
+    const results = matchNodes([firstParent, secondParent, firstChild, secondChild], [
+      {
+        id: "target-parent-a",
+        name: firstParent.name,
+        type: "FRAME",
+        path: firstParent.path,
+        rect: firstParent.rect.value ?? undefined
+      },
+      {
+        id: "target-parent-b",
+        name: secondParent.name,
+        type: "FRAME",
+        path: secondParent.path,
+        rect: secondParent.rect.value ?? undefined
+      },
+      {
+        id: "target-child-a",
+        parentId: "target-parent-a",
+        name: firstChild.name,
+        type: "FRAME",
+        path: ["Input", "输入框（基础组件）", "画板 112"],
+        rect: firstChild.rect.value ?? undefined
+      },
+      {
+        id: "target-child-b",
+        parentId: "target-parent-b",
+        name: secondChild.name,
+        type: "FRAME",
+        path: ["Input", "输入框（基础组件）", "画板 112"],
+        rect: secondChild.rect.value ?? undefined
+      }
+    ]);
+
+    expect(results.find((result) => result.migrationId === "child-a")).toMatchObject({
+      candidateId: "target-child-a",
+      status: "matched",
+      reasons: expect.arrayContaining(["parent"])
+    });
+    expect(results.find((result) => result.migrationId === "child-b")).toMatchObject({
+      candidateId: "target-child-b",
+      status: "matched",
+      reasons: expect.arrayContaining(["parent"])
+    });
+  });
+
+  it("uses clearly unique local geometry only within an already matched parent", () => {
+    const parent = node({
+      migrationId: "parent",
+      name: "Input 输入框",
+      type: "FRAME",
+      path: ["Input 输入框[0]"],
+      rect: native({ x: 0, y: 0, width: 1000, height: 500 })
+    });
+    const left = node({
+      migrationId: "left",
+      parentMigrationId: "parent",
+      name: "输入框（基础组件）",
+      type: "FRAME",
+      path: ["Input 输入框[0]", "输入框（基础组件）[0]"],
+      rect: native({ x: 20, y: 40, width: 320, height: 36 })
+    });
+    const right = node({
+      migrationId: "right",
+      parentMigrationId: "parent",
+      name: "输入框（基础组件）",
+      type: "FRAME",
+      path: ["Input 输入框[0]", "输入框（基础组件）[1]"],
+      rect: native({ x: 420, y: 40, width: 320, height: 36 })
+    });
+    const results = matchNodes([parent, left, right], [
+      {
+        id: "target-parent",
+        name: parent.name,
+        type: "FRAME",
+        path: parent.path,
+        rect: parent.rect.value ?? undefined
+      },
+      {
+        id: "target-left",
+        parentId: "target-parent",
+        name: left.name,
+        type: "FRAME",
+        path: ["Input 输入框", "输入框（基础组件）"],
+        rect: { x: 24, y: 40, width: 320, height: 36 }
+      },
+      {
+        id: "target-right",
+        parentId: "target-parent",
+        name: right.name,
+        type: "FRAME",
+        path: ["Input 输入框", "输入框（基础组件）"],
+        rect: { x: 424, y: 40, width: 320, height: 36 }
+      }
+    ]);
+
+    expect(results.find((result) => result.migrationId === "left")).toMatchObject({
+      candidateId: "target-left",
+      status: "matched"
+    });
+    expect(results.find((result) => result.migrationId === "right")).toMatchObject({
+      candidateId: "target-right",
+      status: "matched"
+    });
   });
 
   it("keeps duplicated persisted migration ids ambiguous", () => {
@@ -568,6 +705,7 @@ describe("layout engine", () => {
 
   it("preserves an existing Figma binding when the Pixso stroke also has a reference", () => {
     expect(shouldWriteReferencedStrokeValue(true, true)).toBe(false);
+    expect(shouldWriteReferencedStrokeValue(true, true, false)).toBe(true);
     expect(shouldWriteReferencedStrokeValue(true, false)).toBe(true);
     expect(shouldWriteReferencedStrokeValue(false, true)).toBe(true);
   });
@@ -641,6 +779,20 @@ describe("layout engine", () => {
     const assessment = safeStructure({ geometryWriteRequired: true, externalBoundsStable: false });
     expect(assessment.eligibleForAutoLayout).toBe(false);
     expect(assessment.eligibleForGroupConversion).toBe(false);
+  });
+
+  it("allows a fully matched collapsed visual container to rebuild in structural mode", () => {
+    const assessment = safeStructure({
+      sourceWidth: 344,
+      sourceHeight: 36,
+      targetWidth: 320,
+      targetHeight: 20,
+      recoverableCollapsedContainer: true
+    });
+
+    expect(assessment.sizeWithinTolerance).toBe(false);
+    expect(assessment.eligibleForAutoLayout).toBe(true);
+    expect(assessment.eligibleForGroupConversion).toBe(true);
   });
 
   it("does not claim changes when auto layout data is unavailable", () => {

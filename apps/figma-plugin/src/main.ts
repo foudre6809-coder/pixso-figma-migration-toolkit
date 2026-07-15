@@ -9,6 +9,7 @@ import {
   createOperationExecutionPlan,
   createRepairSafetyPolicy,
   assessStructureMatch,
+  hasDirectSolidAppearance,
   type RepairSafetyLevel,
   type StructureMatchAssessment,
   protectAbsoluteChildrenBeforeLayout,
@@ -102,6 +103,7 @@ function collectCandidates(root: BaseNode & ChildrenMixin, parentPath: string[] 
     const scene = child as SceneNode;
     const current: MatchCandidate = {
       id: child.id,
+      parentId: root.id,
       name: child.name,
       type: typeOf(scene),
       path,
@@ -253,6 +255,26 @@ function convertGroupToFrame(group: GroupNode): GroupConversion | undefined {
   };
 }
 
+function addCollapsedContainerBackground(source: MigrationNode, group: GroupNode): RectangleNode | undefined {
+  const rect = source.rect.value;
+  const left = source.layout.paddingLeft.value;
+  const top = source.layout.paddingTop.value;
+  if (!rect || typeof left !== "number" || typeof top !== "number") return undefined;
+  const background = figma.createRectangle();
+  try {
+    background.name = `${group.name} 背景`;
+    group.insertChild(0, background);
+    background.x = -left;
+    background.y = -top;
+    background.resizeWithoutConstraints(rect.width, rect.height);
+    applyAppearance(source, background, "apply");
+    return background;
+  } catch (error) {
+    if (!background.removed) background.remove();
+    throw error;
+  }
+}
+
 function applyOperation(node: SceneNode, property: string, value: string | number): void {
   if (canAutoLayout(node)) {
     if (property === "layoutMode" && (value === "HORIZONTAL" || value === "VERTICAL")) node.layoutMode = value;
@@ -314,9 +336,13 @@ function paintsEqual(current: ReadonlyArray<Paint> | PluginAPI["mixed"], expecte
 }
 
 function hasFigmaStrokeReference(node: AppearanceNode): boolean {
+  const visibleStrokes = node.strokes.filter((paint) => paint.visible !== false && (paint.opacity ?? 1) > 0);
+  if (!visibleStrokes.length) return false;
   const styleId = "strokeStyleId" in node ? node.strokeStyleId : undefined;
   const hasStyle = typeof styleId === "string" && styleId.length > 0;
-  const hasVariable = node.strokes.some((paint) => "boundVariables" in paint && Boolean(paint.boundVariables));
+  const hasVariable = visibleStrokes.some(
+    (paint) => "boundVariables" in paint && Object.keys(paint.boundVariables ?? {}).length > 0
+  );
   return hasStyle || hasVariable;
 }
 
@@ -330,7 +356,12 @@ function applyAppearance(source: MigrationNode, node: AppearanceNode, mode: RunM
       appearance.strokeSummary?.value?.paintStyleIds.length ||
       appearance.strokeSummary?.value?.hasVariableReference
   );
-  const writeStrokeValue = shouldWriteReferencedStrokeValue(sourceHasStrokeReference, hasFigmaStrokeReference(node));
+  const targetHasVisibleStroke = node.strokes.some((paint) => paint.visible !== false && (paint.opacity ?? 1) > 0);
+  const writeStrokeValue = shouldWriteReferencedStrokeValue(
+    sourceHasStrokeReference,
+    hasFigmaStrokeReference(node),
+    targetHasVisibleStroke
+  );
   if (appearance.fill.value && recovery.fill) {
     const fills: ReadonlyArray<Paint> = [
       { type: "SOLID", color: appearance.fill.value.color, opacity: appearance.fill.value.opacity }
@@ -711,7 +742,12 @@ function repairNode(
     figmaNode.type === "GROUP" &&
     (needsLayoutContainerConversion || operationPlan.applyComponent);
   if (needsGroupConversion && figmaNode.type === "GROUP") {
+    let syntheticBackground: RectangleNode | undefined;
     try {
+      if (structure.recoverableCollapsedContainer) {
+        syntheticBackground = addCollapsedContainerBackground(source, figmaNode);
+        if (!syntheticBackground) return failedStep("收缩容器背景重建", "缺少可确认的尺寸或 Padding");
+      }
       const converted = convertGroupToFrame(figmaNode);
       if (!converted) return failedStep("Group 转 Frame", "当前 Group 无法安全转换");
       layoutTarget = converted.frame;
@@ -722,6 +758,7 @@ function repairNode(
       messages.push("已将 Sketch 导入的 Group 原位转换为 Frame。", converted.message);
       appliedChanges.push("Group 转 Frame");
     } catch (error) {
+      if (syntheticBackground && !syntheticBackground.removed) syntheticBackground.remove();
       return failedStep("Group 转 Frame", error);
     }
   }
@@ -881,12 +918,39 @@ function createStructureAssessment(
   });
   const layoutProbe = createLayoutPlan(source, { children: sourceChildren });
   const hasOverlap = layoutProbe.riskLevel === "high" && layoutProbe.warnings.some((warning) => warning.includes("重叠"));
+  const orderScore = orderConsistency(matchedIndices);
+  const paddingHorizontal =
+    typeof source.layout.paddingLeft.value === "number" && typeof source.layout.paddingRight.value === "number"
+      ? source.layout.paddingLeft.value + source.layout.paddingRight.value
+      : undefined;
+  const paddingVertical =
+    typeof source.layout.paddingTop.value === "number" && typeof source.layout.paddingBottom.value === "number"
+      ? source.layout.paddingTop.value + source.layout.paddingBottom.value
+      : undefined;
+  const recoverableCollapsedContainer = Boolean(
+    source.type === "FRAME" &&
+      target.type === "GROUP" &&
+      source.layout.mode.value !== "NONE" &&
+      hasDirectSolidAppearance(source) &&
+      sourceRect &&
+      targetRect &&
+      paddingHorizontal !== undefined &&
+      paddingVertical !== undefined &&
+      Math.abs(sourceRect.width - (targetRect.width + paddingHorizontal)) <= 2 &&
+      Math.abs(sourceRect.height - (targetRect.height + paddingVertical)) <= 2 &&
+      sourceChildren.length === targetChildren.length &&
+      matchedIndices.length === sourceChildren.length &&
+      orderScore === 1 &&
+      !hasMask &&
+      !hasUnknownAbsolute &&
+      !hasOverlap
+  );
   return assessStructureMatch({
     parentMatchHighConfidence: isHighConfidenceUniqueMatch(match),
     sourceChildCount: sourceChildren.length,
     targetChildCount: targetChildren.length,
     matchedChildCount: matchedIndices.length,
-    orderConsistency: orderConsistency(matchedIndices),
+    orderConsistency: orderScore,
     hasMask,
     hasBooleanDependency,
     hasRotation,
@@ -898,7 +962,8 @@ function createStructureAssessment(
     targetWidth: targetRect?.width,
     targetHeight: targetRect?.height,
     geometryWriteRequired: Boolean(geometryPlan),
-    externalBoundsStable: !geometryPlan
+    externalBoundsStable: !geometryPlan,
+    recoverableCollapsedContainer
   });
 }
 

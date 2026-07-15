@@ -12,6 +12,7 @@ The project does not assume that private Pixso exposes the same plugin API as pu
 - Node matching and layout planning packages with tests.
 - PRD, architecture, compatibility notes, and test plan.
 - Sample `migration-map.json` and capability report.
+- Offline `.pix` container and Kiwi payload research tools, isolated from both plugins.
 
 ## Install
 
@@ -55,6 +56,16 @@ pnpm typecheck
 pnpm test
 pnpm build
 ```
+
+## Offline PIX Research
+
+Build the workspace, then inspect local files without uploading them:
+
+```bash
+node apps/pix-file-probe/dist/binary-cli.js /local/sample-a.pix /local/sample-b.pix --output-dir output
+```
+
+The parser prototype confirms only evidence that round-trips byte-for-byte and leaves unverified x/y or design-property mappings unset. Real `.pix` files and extracted assets must not be committed.
 
 ## Current Limits
 

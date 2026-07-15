@@ -23,6 +23,9 @@ importers:
       eslint:
         specifier: ^9.18.0
         version: 9.39.5
+      kiwi-schema:
+        specifier: 0.5.0
+        version: 0.5.0
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
@@ -52,6 +55,15 @@ importers:
         specifier: ^1.109.0
         version: 1.130.0
 
+  apps/pix-file-probe:
+    dependencies:
+      '@pixso-figma-migration/pix-parser':
+        specifier: workspace:*
+        version: link:../../packages/pix-parser
+      kiwi-schema:
+        specifier: 0.5.0
+        version: 0.5.0
+
   apps/pixso-plugin:
     dependencies:
       '@pixso-figma-migration/migration-schema':
@@ -75,6 +87,12 @@ importers:
       '@pixso-figma-migration/migration-schema':
         specifier: workspace:*
         version: link:../migration-schema
+
+  packages/pix-parser:
+    dependencies:
+      kiwi-schema:
+        specifier: 0.5.0
+        version: 0.5.0
 
 packages:
 
@@ -760,6 +778,10 @@ packages:
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
+
+  kiwi-schema@0.5.0:
+    resolution: {integrity: sha512-X+FpfU0yTEtc6aTHS7VwbOpvQwRt70+pXXWRI5fd6CvWhe7pSVC854TVo4Zo0x5/wwcWj+/9KUlXpdcP0dY9AA==}
+    hasBin: true
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -1620,6 +1642,8 @@ snapshots:
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
+
+  kiwi-schema@0.5.0: {}
 
   levn@0.4.1:
     dependencies:

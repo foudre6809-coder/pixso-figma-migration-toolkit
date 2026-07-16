@@ -6,6 +6,8 @@ import { analyzePixFiles } from "./analysis.js";
 import { renderBinaryResearchMarkdown } from "./report.js";
 import { analyzeControlledPixFiles } from "./controlled-analysis.js";
 import { renderControlledMarkdown } from "./controlled-report.js";
+import { analyzeNestedCoordinateFiles, nestedCoordinateSampleNames } from "./nested-coordinate-analysis.js";
+import { renderNestedCoordinateMarkdown } from "./nested-coordinate-report.js";
 
 export async function runBinaryInspect(argv: string[]): Promise<number> {
   const { files, outputDirectory, help } = parseArguments(argv);
@@ -17,6 +19,15 @@ export async function runBinaryInspect(argv: string[]): Promise<number> {
   if (files.some((file) => !file.toLowerCase().endsWith(".pix"))) throw new Error("All inputs must use the .pix extension");
   const destination = resolve(outputDirectory ?? "output");
   await mkdir(destination, { recursive: true });
+  if (isNestedCoordinateSet(files)) {
+    const nested = await analyzeNestedCoordinateFiles(files.map((file) => resolve(file)));
+    const jsonPath = resolve(destination, "pix-nested-coordinate-report.json");
+    const markdownPath = resolve(destination, "pix-nested-coordinate-report.md");
+    await writeFile(jsonPath, `${JSON.stringify(nested, null, 2)}\n`, "utf8");
+    await writeFile(markdownPath, renderNestedCoordinateMarkdown(nested), "utf8");
+    process.stdout.write(`${nested.conclusion.status}\n${jsonPath}\n${markdownPath}\n`);
+    return 0;
+  }
   if (isControlledSet(files)) {
     const controlled = await analyzeControlledPixFiles(files.map((file) => resolve(file)));
     const jsonPath = resolve(destination, "pix-controlled-diff-report.json");
@@ -33,6 +44,11 @@ export async function runBinaryInspect(argv: string[]): Promise<number> {
   await writeFile(markdownPath, renderBinaryResearchMarkdown(report), "utf8");
   process.stdout.write(`${report.conclusion.status}\n${jsonPath}\n${markdownPath}\n`);
   return report.conclusion.status === "FIX" ? 1 : 0;
+}
+
+function isNestedCoordinateSet(files: string[]): boolean {
+  const names = new Set(files.map((file) => basename(file)));
+  return nestedCoordinateSampleNames.every((name) => names.has(name));
 }
 
 const controlledNames = [

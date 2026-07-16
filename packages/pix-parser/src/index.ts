@@ -40,6 +40,9 @@ export interface ParsedPixNode {
     diagnostics: {
       gapCandidate?: number;
       paddingCandidate?: { top?: number; right?: number; bottom?: number; left?: number };
+      computedAbsoluteX?: number;
+      computedAbsoluteY?: number;
+      coordinateCompositionStatus: "confirmed-translation-only" | "not-found";
       styleReference: "not-found";
       variableBinding: "not-found";
     };
@@ -149,6 +152,7 @@ export function parseDecodedPixsoPayload(
     searchOffset = recordOffset + encoded.length;
     return mapNode(node, recordOffset, encoded.length);
   });
+  applyTranslationComposition(nodes);
 
   return {
     serialization: "kiwi",
@@ -257,11 +261,62 @@ function mapNode(node: KiwiNode, recordOffset: number, recordLength: number): Pa
       diagnostics: {
         gapCandidate: finiteNumber(node.stackSpacing),
         paddingCandidate: hasPaddingCandidate ? padding : undefined,
+        coordinateCompositionStatus: "not-found",
         styleReference: "not-found",
         variableBinding: "not-found"
       }
     }
   };
+}
+
+function applyTranslationComposition(nodes: ParsedPixNode[]): void {
+  const byId = new Map(nodes.flatMap((node) => node.id ? [[node.id, node] as const] : []));
+  const cache = new Map<string, { x: number; y: number } | null>();
+
+  const compute = (node: ParsedPixNode, visiting: Set<string>): { x: number; y: number } | null => {
+    if (!node.id) return null;
+    const cached = cache.get(node.id);
+    if (cached !== undefined) return cached;
+    if (visiting.has(node.id)) return null;
+    visiting.add(node.id);
+
+    let result: { x: number; y: number } | null = null;
+    if (isCanvasOrigin(node)) {
+      result = { x: 0, y: 0 };
+    } else if (isPureTranslation(node)) {
+      const local = { x: node.rect.x!, y: node.rect.y! };
+      if (node.parentId === null) {
+        result = local;
+      } else if (typeof node.parentId === "string") {
+        const parent = byId.get(node.parentId);
+        const parentPosition = parent ? compute(parent, visiting) : null;
+        if (parentPosition) result = { x: parentPosition.x + local.x, y: parentPosition.y + local.y };
+      }
+    }
+
+    visiting.delete(node.id);
+    cache.set(node.id, result);
+    return result;
+  };
+
+  for (const node of nodes) {
+    const position = compute(node, new Set());
+    if (!position || isCanvasOrigin(node)) continue;
+    node.raw.diagnostics.computedAbsoluteX = position.x;
+    node.raw.diagnostics.computedAbsoluteY = position.y;
+    node.raw.diagnostics.coordinateCompositionStatus = "confirmed-translation-only";
+  }
+}
+
+function isCanvasOrigin(node: ParsedPixNode): boolean {
+  return node.type === "CANVAS" && node.parentId === null && node.raw.transform === undefined;
+}
+
+function isPureTranslation(node: ParsedPixNode): boolean {
+  const transform = node.raw.transform;
+  return node.rect.x !== undefined && node.rect.y !== undefined &&
+    transform?.m00 === 1 && transform.m01 === 0 && transform.m10 === 0 && transform.m11 === 1 &&
+    transform.m02 === node.rect.x && transform.m12 === node.rect.y;
 }
 
 function guidToId(guid: KiwiGuid | undefined): string | null {

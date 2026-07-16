@@ -20,10 +20,11 @@ Primary format reference: [evanw/kiwi](https://github.com/evanw/kiwi), especiall
 - `PixsoMsg.pixsoNodes[]` is the document node-record sequence. This is strongly supported by schema typing, exact root-message round trips, and sequential per-node record matches.
 - `PixsoNode.size` represents width/height.
 - Sixteen controlled synthetic samples confirm `transform.m02/m12` as parent-local x/y translation, `stackMode` as Auto Layout direction, four `stackPadding*` fields as Padding, and `strokePaints`/border weights/`strokeAlign` as visible Stroke values.
+- Nine controlled nested samples confirm that Page/Frame/Rectangle chains containing only identity-plus-translation matrices use exact ancestor translation sums. This is explicitly limited to `translation-only ancestor composition`.
 
 ## Not verified
 
-- Page-absolute nested coordinates across rotation, nesting, and different coordinate spaces. Local translation is confirmed.
+- Nested coordinates involving rotation, scale, skew, mirror, Auto Layout, Group, Section, Component/Instance, virtual parents, or page-origin offsets.
 - Controlled value mappings for gap and corner radius.
 - Stroke style references and variable bindings; the controlled samples contained visible values only.
 - The meaning of sparse or deletion-state `PixsoNode` records that omit id, name, or type.
@@ -34,8 +35,8 @@ Primary format reference: [evanw/kiwi](https://github.com/evanw/kiwi), especiall
 
 Real samples remain local and must not be committed. The next run needs:
 
-1. A nested parent/child coordinate series with documented parent and child translations.
-2. Stroke visible values, shared style reference, and variable binding variants.
+1. Stroke visible values, shared style reference, and variable binding variants.
+2. A separate rotation/scale matrix series only if explicitly authorized.
 3. Gap and corner-radius off/A/B series only in separately authorized rounds.
 4. Two unchanged saves to identify nondeterministic IDs and timestamps.
 

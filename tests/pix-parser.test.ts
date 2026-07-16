@@ -30,6 +30,7 @@ message ParentIndex {
 enum NodeType {
   FRAME = 0;
   CANVAS = 1;
+  RECTANGLE = 2;
 }
 
 enum StackMode {
@@ -125,12 +126,96 @@ describe("pix parser prototype", () => {
       },
       raw: { diagnostics: { gapCandidate: 8 } }
     });
+    expect(result.nodes[0].raw.diagnostics).toMatchObject({
+      computedAbsoluteX: -50,
+      computedAbsoluteY: -50,
+      coordinateCompositionStatus: "confirmed-translation-only"
+    });
     expect(result.nodes[0].attributes).not.toHaveProperty("gap");
     expect(result.nodes[0].raw.recordOffset).toBeGreaterThanOrEqual(0);
     expect(result.nodes[0].raw.fieldConfidence["rect.x"]).toBe("confirmed");
     expect(result.nodes[0].raw.fieldConfidence.layoutMode).toBe("confirmed");
     expect(result.nodes[0].raw.fieldConfidence.padding).toBe("confirmed");
     expect(result.nodes[0].raw.fieldConfidence.stroke).toBe("confirmed");
+  });
+
+  it("computes diagnostics-only absolute coordinates for a pure translation ancestor chain", () => {
+    const schema = parseSchema(schemaText);
+    const compiled = compileSchema(schema);
+    const schemaBytes = encodeBinarySchema(schema);
+    const payload = compiled.encodePixsoMsg({
+      pixsoNodes: [
+        {
+          guid: { sessionID: 2, localID: 7 },
+          parentIndex: { guid: { sessionID: 2, localID: 6 } },
+          transform: { m00: 1, m01: 0, m02: 5, m10: 0, m11: 1, m12: 6 },
+          type: "RECTANGLE",
+          name: "ChildRect",
+          size: { x: 20, y: 20 }
+        },
+        {
+          guid: { sessionID: 2, localID: 6 },
+          parentIndex: { guid: { sessionID: 2, localID: 1 } },
+          transform: { m00: 1, m01: 0, m02: 30, m10: 0, m11: 1, m12: 40 },
+          type: "FRAME",
+          name: "FrameB",
+          size: { x: 150, y: 120 }
+        },
+        {
+          guid: { sessionID: 2, localID: 1 },
+          parentIndex: { guid: { sessionID: 0, localID: 1 } },
+          transform: { m00: 1, m01: 0, m02: 100, m10: 0, m11: 1, m12: 200 },
+          type: "FRAME",
+          name: "ParentFrame",
+          size: { x: 300, y: 300 }
+        },
+        {
+          guid: { sessionID: 0, localID: 1 },
+          parentIndex: { guid: { sessionID: 0, localID: 0 } },
+          type: "CANVAS",
+          name: "Page"
+        }
+      ]
+    });
+    const result = parseDecodedPixsoPayload(schemaBytes, "synthetic-nested.pix", payload);
+    const child = result.nodes.find((node) => node.name === "ChildRect");
+    expect(child?.rect).toMatchObject({ x: 5, y: 6 });
+    expect(child?.raw.diagnostics).toMatchObject({
+      computedAbsoluteX: 135,
+      computedAbsoluteY: 246,
+      coordinateCompositionStatus: "confirmed-translation-only"
+    });
+  });
+
+  it("omits computed coordinates when an ancestor is not a pure translation", () => {
+    const schema = parseSchema(schemaText);
+    const compiled = compileSchema(schema);
+    const schemaBytes = encodeBinarySchema(schema);
+    const payload = compiled.encodePixsoMsg({
+      pixsoNodes: [
+        {
+          guid: { sessionID: 1, localID: 2 },
+          parentIndex: { guid: { sessionID: 1, localID: 1 } },
+          transform: { m00: 1, m01: 0, m02: 10, m10: 0, m11: 1, m12: 20 },
+          type: "RECTANGLE",
+          name: "ChildRect",
+          size: { x: 20, y: 20 }
+        },
+        {
+          guid: { sessionID: 1, localID: 1 },
+          parentIndex: { guid: { sessionID: 0, localID: 0 } },
+          transform: { m00: 1, m01: 1, m02: 30, m10: 0, m11: 1, m12: 40 },
+          type: "FRAME",
+          name: "SkewedParent",
+          size: { x: 100, y: 100 }
+        }
+      ]
+    });
+    const result = parseDecodedPixsoPayload(schemaBytes, "synthetic-non-translation.pix", payload);
+    const child = result.nodes.find((node) => node.name === "ChildRect");
+    expect(child?.raw.diagnostics.coordinateCompositionStatus).toBe("not-found");
+    expect(child?.raw.diagnostics).not.toHaveProperty("computedAbsoluteX");
+    expect(child?.raw.diagnostics).not.toHaveProperty("computedAbsoluteY");
   });
 
   it("lists stored ZIP entries without extracting files", () => {

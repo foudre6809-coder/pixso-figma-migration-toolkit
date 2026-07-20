@@ -62,6 +62,24 @@ export interface ParsedPixDocument {
   entries: ZipEntry[];
 }
 
+export interface DecodedPixResearchNode {
+  recordOffset: number;
+  recordLength: number;
+  decoded: Record<string, unknown>;
+}
+
+export interface DecodedPixResearchDocument {
+  serialization: "kiwi";
+  compression: "zstd";
+  schemaDefinitionCount: number;
+  rootMessage: "PixsoMsg";
+  rootRoundTripExact: boolean;
+  payloadEntry: string;
+  payloadBytes: number;
+  nodes: DecodedPixResearchNode[];
+  entries: ZipEntry[];
+}
+
 interface KiwiGuid {
   sessionID?: number;
   localID?: number;
@@ -105,6 +123,37 @@ const ZSTD_MAGIC = Buffer.from([0x28, 0xb5, 0x2f, 0xfd]);
 const MAX_DECOMPRESSED_BYTES = 512 * 1024 * 1024;
 
 export async function parsePixFile(filePath: string): Promise<ParsedPixDocument> {
+  const source = await readPixSource(filePath);
+  return parsePixBuffers(source.schemaBytes, source.payloadEntryName, source.wrappedPayload, source.entries);
+}
+
+export async function decodePixFileForResearch(filePath: string): Promise<DecodedPixResearchDocument> {
+  const source = await readPixSource(filePath);
+  const payload = decompressWrappedPayload(source.wrappedPayload);
+  const decoded = decodePayload(source.schemaBytes, payload);
+  return {
+    serialization: "kiwi",
+    compression: "zstd",
+    schemaDefinitionCount: decoded.schema.definitions.length,
+    rootMessage: "PixsoMsg",
+    rootRoundTripExact: decoded.rootRoundTripExact,
+    payloadEntry: source.payloadEntryName,
+    payloadBytes: decoded.payloadBuffer.length,
+    nodes: decoded.sourceNodes.map((node, index) => ({
+      recordOffset: decoded.recordBoundaries[index]!.recordOffset,
+      recordLength: decoded.recordBoundaries[index]!.recordLength,
+      decoded: node as Record<string, unknown>
+    })),
+    entries: source.entries
+  };
+}
+
+async function readPixSource(filePath: string): Promise<{
+  schemaBytes: Uint8Array;
+  payloadEntryName: string;
+  wrappedPayload: Uint8Array;
+  entries: ZipEntry[];
+}> {
   const fileBytes = await readFile(filePath);
   const entries = readZipEntries(fileBytes);
   if (entries.some((entry) => entry.encrypted)) throw new Error("Encrypted ZIP entries are not supported");
@@ -114,7 +163,12 @@ export async function parsePixFile(filePath: string): Promise<ParsedPixDocument>
     (entry) => entry.name.toLowerCase().endsWith(".pix") && entry.name !== "pixso.binary" && entry.data
   );
   if (!payloadEntry?.data) throw new Error("Nested .pix payload entry not found or not readable");
-  return parsePixBuffers(schemaEntry.data, payloadEntry.name, payloadEntry.data, entries);
+  return {
+    schemaBytes: schemaEntry.data,
+    payloadEntryName: payloadEntry.name,
+    wrappedPayload: payloadEntry.data,
+    entries
+  };
 }
 
 export function parsePixBuffers(
@@ -133,6 +187,37 @@ export function parseDecodedPixsoPayload(
   payload: Uint8Array,
   entries: ZipEntry[] = []
 ): ParsedPixDocument {
+  const decodedPayload = decodePayload(schemaBytes, payload);
+  const nodes = decodedPayload.sourceNodes.map((node, index) => {
+    const boundary = decodedPayload.recordBoundaries[index]!;
+    return mapNode(node, boundary.recordOffset, boundary.recordLength);
+  });
+  applyTranslationComposition(nodes);
+
+  return {
+    serialization: "kiwi",
+    compression: "zstd",
+    coordinateModel: "local-transform",
+    schemaDefinitionCount: decodedPayload.schema.definitions.length,
+    rootMessage: "PixsoMsg",
+    rootRoundTripExact: true,
+    payloadEntry: payloadEntryName,
+    payloadBytes: decodedPayload.payloadBuffer.length,
+    nodes,
+    entries
+  };
+}
+
+function decodePayload(
+  schemaBytes: Uint8Array,
+  payload: Uint8Array
+): {
+  schema: Schema;
+  payloadBuffer: Buffer;
+  sourceNodes: KiwiNode[];
+  recordBoundaries: Array<{ recordOffset: number; recordLength: number }>;
+  rootRoundTripExact: boolean;
+} {
   const schema = decodeBinarySchema(schemaBytes);
   validatePixsoSchema(schema);
   const payloadBuffer = Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength);
@@ -145,27 +230,14 @@ export function parseDecodedPixsoPayload(
   if (!Array.isArray(sourceNodes)) throw new Error("PixsoMsg.pixsoNodes is not an array");
 
   let searchOffset = 0;
-  const nodes = sourceNodes.map((node) => {
+  const recordBoundaries = sourceNodes.map((node) => {
     const encoded = Buffer.from(compiled.encodePixsoNode(node) as Uint8Array);
     const recordOffset = payloadBuffer.indexOf(encoded, searchOffset);
     if (recordOffset < 0) throw new Error("Unable to locate an encoded PixsoNode record boundary");
     searchOffset = recordOffset + encoded.length;
-    return mapNode(node, recordOffset, encoded.length);
+    return { recordOffset, recordLength: encoded.length };
   });
-  applyTranslationComposition(nodes);
-
-  return {
-    serialization: "kiwi",
-    compression: "zstd",
-    coordinateModel: "local-transform",
-    schemaDefinitionCount: schema.definitions.length,
-    rootMessage: "PixsoMsg",
-    rootRoundTripExact: true,
-    payloadEntry: payloadEntryName,
-    payloadBytes: payloadBuffer.length,
-    nodes,
-    entries
-  };
+  return { schema, payloadBuffer, sourceNodes, recordBoundaries, rootRoundTripExact: exact };
 }
 
 function validatePixsoSchema(schema: Schema): void {

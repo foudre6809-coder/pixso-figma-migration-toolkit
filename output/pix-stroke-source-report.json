@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-20T10:01:05.007Z",
+  "privacy": {
+    "localOnly": true,
+    "pathsRedacted": true,
+    "realFilesCommitted": false
+  },
+  "sampleCount": 8,
+  "requiredSamples": [
+    "stroke-inline-blue.pix",
+    "stroke-style-blue.pix",
+    "stroke-style-detached-blue.pix",
+    "stroke-style-value-blue.pix",
+    "stroke-style-value-green.pix",
+    "stroke-inline-variable-value.pix",
+    "stroke-variable-bound.pix",
+    "stroke-variable-detached.pix",
+    "stroke-variable-value-a.pix",
+    "stroke-variable-value-b.pix"
+  ],
+  "missingSamples": [
+    "stroke-variable-detached.pix",
+    "stroke-variable-value-b.pix"
+  ],
+  "integrity": {
+    "decodedSamples": 8,
+    "targetGuidStable": true,
+    "targetIdentityStable": true,
+    "nodeCountStable": false,
+    "unexpectedDecodedChanges": []
+  },
+  "samples": [
+    {
+      "sample": "stroke-inline-blue.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 12,
+      "recordOffset": 354,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "inline"
+    },
+    {
+      "sample": "stroke-style-blue.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 13,
+      "recordOffset": 504,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "shared-style"
+    },
+    {
+      "sample": "stroke-style-detached-blue.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 13,
+      "recordOffset": 633,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "detached-style"
+    },
+    {
+      "sample": "stroke-style-value-blue.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 13,
+      "recordOffset": 504,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "shared-style"
+    },
+    {
+      "sample": "stroke-style-value-green.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 13,
+      "recordOffset": 501,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "shared-style"
+    },
+    {
+      "sample": "stroke-inline-variable-value.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 13,
+      "recordOffset": 633,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "inline"
+    },
+    {
+      "sample": "stroke-variable-bound.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 15,
+      "recordOffset": 783,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "variable-bound"
+    },
+    {
+      "sample": "stroke-variable-value-a.pix",
+      "decoded": true,
+      "targetName": "StrokeTarget",
+      "targetType": "RECTANGLE",
+      "targetGuid": "22:1",
+      "nodeCount": 15,
+      "recordOffset": 783,
+      "visibleStroke": {
+        "weight": 2,
+        "align": "INSIDE",
+        "color": "#3366FF"
+      },
+      "expectedSource": "variable-bound"
+    }
+  ],
+  "completeDecodedNodeDiffs": [
+    {
+      "leftSample": "stroke-inline-blue.pix",
+      "rightSample": "stroke-style-blue.pix",
+      "changedFieldCount": 2,
+      "changedFields": [
+        {
+          "path": "inheritStrokeStyleID.localID",
+          "left": null,
+          "right": 2
+        },
+        {
+          "path": "inheritStrokeStyleID.sessionID",
+          "left": null,
+          "right": 22
+        }
+      ]
+    },
+    {
+      "leftSample": "stroke-style-blue.pix",
+      "rightSample": "stroke-style-detached-blue.pix",
+      "changedFieldCount": 2,
+      "changedFields": [
+        {
+          "path": "inheritStrokeStyleID.localID",
+          "left": 2,
+          "right": 0
+        },
+        {
+          "path": "inheritStrokeStyleID.sessionID",
+          "left": 22,
+          "right": 0
+        }
+      ]
+    },
+    {
+      "leftSample": "stroke-style-value-blue.pix",
+      "rightSample": "stroke-style-value-green.pix",
+      "changedFieldCount": 0,
+      "changedFields": []
+    },
+    {
+      "leftSample": "stroke-inline-variable-value.pix",
+      "rightSample": "stroke-variable-bound.pix",
+      "changedFieldCount": 4,
+      "changedFields": [
+        {
+          "path": "strokePaints[0].colorVar.dataType",
+          "left": null,
+          "right": "ALIAS"
+        },
+        {
+          "path": "strokePaints[0].colorVar.resolvedDataType",
+          "left": null,
+          "right": "COLOR"
+        },
+        {
+          "path": "strokePaints[0].colorVar.value.alias.guid.localID",
+          "left": null,
+          "right": 3
+        },
+        {
+          "path": "strokePaints[0].colorVar.value.alias.guid.sessionID",
+          "left": null,
+          "right": 26
+        }
+      ]
+    }
+  ],
+  "styleReference": {
+    "status": "confirmed",
+    "candidateIdentityFieldPaths": [
+      "inheritStrokeStyleID.sessionID",
+      "inheritStrokeStyleID.localID"
+    ],
+    "valueFieldPaths": [],
+    "samples": [
+      "stroke-inline-blue.pix",
+      "stroke-style-blue.pix",
+      "stroke-style-detached-blue.pix",
+      "stroke-style-value-blue.pix",
+      "stroke-style-value-green.pix"
+    ],
+    "evidenceChains": [
+      "inline -> style introduces stable non-appearance fields",
+      "style -> detached removes those fields while keeping the visible blue stroke",
+      "style blue -> style green keeps identity fields stable; decoded target visible stroke did not change"
+    ],
+    "limitations": [
+      "Shared style evidence is scoped to color style binding on stroke paint.",
+      "The style-value-green sample did not change decoded visible stroke fields; shared style definition value storage remains not-found."
+    ]
+  },
+  "variableBinding": {
+    "status": "inferred",
+    "candidateIdentityFieldPaths": [
+      "strokePaints[0].colorVar.value.alias.guid.sessionID",
+      "strokePaints[0].colorVar.value.alias.guid.localID",
+      "strokePaints[0].colorVar.dataType",
+      "strokePaints[0].colorVar.resolvedDataType"
+    ],
+    "valueFieldPaths": [],
+    "samples": [
+      "stroke-inline-variable-value.pix",
+      "stroke-variable-bound.pix",
+      "stroke-variable-value-a.pix"
+    ],
+    "evidenceChains": [
+      "inline variable value -> variable bound introduces candidate non-appearance fields",
+      "variable bound -> value A is stable",
+      "variable detached and value B samples are required to confirm identity and value propagation"
+    ],
+    "limitations": [
+      "Missing variable samples: stroke-variable-detached.pix, stroke-variable-value-b.pix"
+    ]
+  },
+  "parserBoundary": {
+    "attributesStrokeResolvedAppearanceOnly": true,
+    "sourceFieldsInDiagnosticsOnly": true,
+    "parserSourceOutputChanged": false
+  },
+  "conclusion": {
+    "status": "FIX",
+    "reason": "At least one stroke source chain has evidence, but the matrix is incomplete or one chain is not confirmed."
+  }
+}

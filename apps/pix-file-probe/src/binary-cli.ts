@@ -8,6 +8,8 @@ import { analyzeControlledPixFiles } from "./controlled-analysis.js";
 import { renderControlledMarkdown } from "./controlled-report.js";
 import { analyzeNestedCoordinateFiles, nestedCoordinateSampleNames } from "./nested-coordinate-analysis.js";
 import { renderNestedCoordinateMarkdown } from "./nested-coordinate-report.js";
+import { analyzeStrokeSourcePixFiles, strokeSourceSampleNames } from "./stroke-source-analysis.js";
+import { renderStrokeSourceMarkdown } from "./stroke-source-report.js";
 
 export async function runBinaryInspect(argv: string[]): Promise<number> {
   const { files, outputDirectory, help } = parseArguments(argv);
@@ -19,6 +21,15 @@ export async function runBinaryInspect(argv: string[]): Promise<number> {
   if (files.some((file) => !file.toLowerCase().endsWith(".pix"))) throw new Error("All inputs must use the .pix extension");
   const destination = resolve(outputDirectory ?? "output");
   await mkdir(destination, { recursive: true });
+  if (isStrokeSourceSet(files)) {
+    const strokeSource = await analyzeStrokeSourcePixFiles(files.map((file) => resolve(file)));
+    const jsonPath = resolve(destination, "pix-stroke-source-report.json");
+    const markdownPath = resolve(destination, "pix-stroke-source-report.md");
+    await writeFile(jsonPath, `${JSON.stringify(strokeSource, null, 2)}\n`, "utf8");
+    await writeFile(markdownPath, renderStrokeSourceMarkdown(strokeSource), "utf8");
+    process.stdout.write(`${strokeSource.conclusion.status}\n${jsonPath}\n${markdownPath}\n`);
+    return strokeSource.conclusion.status === "FIX" ? 1 : 0;
+  }
   if (isNestedCoordinateSet(files)) {
     const nested = await analyzeNestedCoordinateFiles(files.map((file) => resolve(file)));
     const jsonPath = resolve(destination, "pix-nested-coordinate-report.json");
@@ -49,6 +60,11 @@ export async function runBinaryInspect(argv: string[]): Promise<number> {
 function isNestedCoordinateSet(files: string[]): boolean {
   const names = new Set(files.map((file) => basename(file)));
   return nestedCoordinateSampleNames.every((name) => names.has(name));
+}
+
+function isStrokeSourceSet(files: string[]): boolean {
+  const names = new Set(files.map((file) => basename(file)));
+  return strokeSourceSampleNames.some((name) => names.has(name));
 }
 
 const controlledNames = [

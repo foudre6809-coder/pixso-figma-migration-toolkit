@@ -1,6 +1,6 @@
 # Pixso → Figma Migration Architecture Benchmark
 
-研究日期：2026-08-11  
+研究日期：2026-08-11
 范围：只读架构研究；未修改 migration schema、Pixso/Figma 插件或 `.pix` 解析逻辑。
 
 本文使用以下证据标签：

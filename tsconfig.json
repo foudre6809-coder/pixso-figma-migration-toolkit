@@ -6,6 +6,7 @@
     { "path": "./packages/layout-engine" },
     { "path": "./packages/pix-parser" },
     { "path": "./apps/pix-file-probe" },
+    { "path": "./apps/pixso-layout-probe" },
     { "path": "./apps/pixso-plugin" },
     { "path": "./apps/figma-plugin" }
   ],

@@ -64,6 +64,8 @@ importers:
         specifier: 0.5.0
         version: 0.5.0
 
+  apps/pixso-layout-probe: {}
+
   apps/pixso-plugin:
     dependencies:
       '@pixso-figma-migration/migration-schema':

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Pixso Auto Layout 受控研究探针</title>
+  </head>
+  <body>
+    <main>
+      <h1>Auto Layout 受控研究探针</h1>
+      <p>只读取当前页面中名称以 <code>AL_</code> 开头的合成样本，并导出布局字段原始值。</p>
+      <button id="export">导出 pixso-layout-probe.json</button>
+      <p id="status" aria-live="polite">等待 Pixso 主线程读取……</p>
+    </main>
+    <style>
+      body { font: 12px system-ui, sans-serif; margin: 16px; }
+      main { display: grid; gap: 12px; }
+      h1 { font-size: 16px; margin: 0; }
+      p { margin: 0; }
+      button { min-height: 36px; }
+    </style>
+    <script>
+      function saveJson(name, data) {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+      document.getElementById("export").onclick = () => {
+        document.getElementById("status").textContent = "正在读取当前页面……";
+        parent.postMessage({ pluginMessage: { type: "export" } }, "*");
+      };
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (message?.type === "download-json") {
+          saveJson(message.name, message.data);
+          document.getElementById("status").textContent = "导出完成。";
+        }
+        if (message?.type === "error") document.getElementById("status").textContent = `读取失败：${message.message}`;
+      };
+    </script>
+  </body>
+</html>

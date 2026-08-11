@@ -72,6 +72,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/migration-schema
 
+  apps/pixso-plugin-smoke: {}
+
   packages/layout-engine:
     dependencies:
       '@pixso-figma-migration/migration-schema':

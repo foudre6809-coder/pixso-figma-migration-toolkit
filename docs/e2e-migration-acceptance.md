@@ -1,5 +1,7 @@
 # P0-B Pixso → Figma 端到端迁移验收
 
+> 后续执行路径核验已确认：Pixso Desktop 可通过本地打包插件的 `manifest.json` 直接执行主线程，且不需要 `127.0.0.1:5201`。本文以下内容保留为当次 STOP 的历史记录；其中“必须恢复 5201”的环境判断已被实测推翻。P0-B 可在审核后沿已验证路径重跑，详见 [Pixso 插件执行路径核验](./pixso-plugin-execution-paths.md)。
+
 ## Executive Summary
 
 - 结果：`STOP`

@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "result": "STOP",
+  "migrationValue": {
+    "value": "NO",
+    "scope": "current execution environment",
+    "note": "No executable migration-value evidence was established; this is not a product-quality verdict."
+  },
+  "blocker": {
+    "stage": "pixso-source",
+    "category": "ENVIRONMENT",
+    "reason": "Pixso Desktop local plugin bridge was not listening, so plugin main-thread code could not run.",
+    "client": {
+      "name": "Pixso Desktop",
+      "version": "2.3.0"
+    },
+    "evidence": [
+      {
+        "check": "plugin-bridge-listener",
+        "endpoint": "127.0.0.1:5201",
+        "result": "not-listening"
+      },
+      {
+        "check": "plugin-websocket",
+        "endpoint": "ws://127.0.0.1:5201/plugin",
+        "result": "ERR_CONNECTION_REFUSED"
+      },
+      {
+        "check": "minimal-smoke-plugin",
+        "expected": "create one ACC_00_SMOKE frame",
+        "result": "main-thread-handler-not-executed"
+      },
+      {
+        "check": "full-client-restart",
+        "result": "bridge-remained-unavailable"
+      }
+    ]
+  },
+  "fixture": {
+    "name": "P0-B Pixso-Figma E2E Acceptance Fixture",
+    "dataClassification": "synthetic",
+    "status": "not-established",
+    "topLevelSceneCount": null,
+    "totalNodeCount": null,
+    "capabilities": []
+  },
+  "stages": {
+    "source": {
+      "status": "blocked",
+      "nodeCount": null,
+      "snapshot": null,
+      "migrationMap": null
+    },
+    "sketchExport": {
+      "status": "not-run",
+      "importable": null
+    },
+    "freshFigmaImport": {
+      "status": "not-run"
+    },
+    "conservativeRepair": {
+      "status": "not-run"
+    },
+    "structuralRepair": {
+      "status": "not-run"
+    }
+  },
+  "metrics": {
+    "nodeCoverage": null,
+    "hierarchyCoverage": null,
+    "appearanceCoverage": null,
+    "autoLayoutCoverage": null,
+    "textCoverage": null,
+    "vectorCoverage": null,
+    "imageCoverage": null,
+    "componentInstanceCoverage": null,
+    "geometry": {
+      "median": null,
+      "p95": null,
+      "max": null,
+      "regressionRate": null
+    },
+    "manualIntervention": {
+      "automatic": null,
+      "minor": null,
+      "major": null,
+      "unrecoverable": null
+    }
+  },
+  "repairValue": {
+    "conservativeIncrement": null,
+    "structuralIncrement": null
+  },
+  "failures": [],
+  "topFailures": [],
+  "regressions": [],
+  "priorities": {
+    "p0": "Restore the Pixso Desktop local plugin bridge, verify a one-node smoke plugin, then rerun the unchanged P0-B acceptance workflow.",
+    "p1": "deferred",
+    "p2": "deferred"
+  },
+  "privacy": {
+    "realAssetsCommitted": false,
+    "designFilesCommitted": false,
+    "absolutePathsIncluded": false,
+    "syntheticOnly": true
+  }
+}

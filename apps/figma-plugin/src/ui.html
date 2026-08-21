@@ -1,25 +1,63 @@
 <!doctype html>
-<html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Pixso 迁移修复工具</title>
+  </head>
   <body>
     <main>
-      <h1>Pixso Migration Repair</h1>
-      <textarea id="json" placeholder="Paste migration-map.json here"></textarea>
-      <button id="repair">Repair selected scope</button>
+      <h1>Pixso 迁移修复工具</h1>
+      <label>迁移数据文件 <input id="file" type="file" accept=".json,application/json"></label>
+      <span id="file-status">尚未载入文件</span>
+      <textarea id="json" placeholder="请选择 migration-map.json，也可以在这里粘贴内容"></textarea>
+      <fieldset>
+        <legend>操作安全等级</legend>
+        <label><input type="radio" name="level" value="diagnostic"> 诊断：只扫描，不修改</label>
+        <label><input type="radio" name="level" value="conservative" checked> 保守修复（默认）：仅写迁移标识，并恢复已确认承载节点的单层实色外观</label>
+        <label><input type="radio" name="level" value="structural"> 结构修复（实验性）：允许转换节点、自动布局与组件重建</label>
+      </fieldset>
+      <label class="risk"><input id="geometry" type="checkbox" disabled> 实验性几何恢复：允许写入坐标和尺寸，可能造成错位</label>
+      <div class="actions">
+        <button id="preview">仅扫描预览</button>
+        <button id="repair">执行安全修复</button>
+      </div>
       <section id="summary"></section>
       <ol id="results"></ol>
     </main>
     <style>
       body { font: 12px system-ui, sans-serif; margin: 16px; }
       textarea { width: 100%; height: 240px; box-sizing: border-box; }
-      button { margin: 12px 0; }
+      fieldset { display: grid; gap: 8px; margin: 12px 0; }
+      .risk { display: block; color: #c92a2a; margin: 8px 0; }
+      .actions { display: flex; gap: 8px; margin: 12px 0; }
+      button { margin: 0; }
       li { margin: 8px 0; }
-      .restored { color: #087f5b; }
+      .modified { color: #087f5b; }
+      .verified { color: #1971c2; }
       .partial { color: #b7791f; }
       .failed { color: #c92a2a; }
     </style>
     <script>
+      let loadedJson = "";
+      const selectedLevel = () => document.querySelector('input[name="level"]:checked').value;
+      const geometry = document.getElementById("geometry");
+      document.querySelectorAll('input[name="level"]').forEach((input) => {
+        input.onchange = () => {
+          geometry.disabled = selectedLevel() !== "structural";
+          if (geometry.disabled) geometry.checked = false;
+        };
+      });
+      document.getElementById("file").onchange = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        loadedJson = await file.text();
+        document.getElementById("file-status").textContent = `已载入 ${file.name}（${(file.size / 1024 / 1024).toFixed(1)} MB）`;
+      };
+      document.getElementById("preview").onclick = () => {
+        parent.postMessage({ pluginMessage: { type: "preview", json: loadedJson || document.getElementById("json").value, safetyLevel: selectedLevel(), experimentalGeometry: geometry.checked } }, "*");
+      };
       document.getElementById("repair").onclick = () => {
-        parent.postMessage({ pluginMessage: { type: "repair", json: document.getElementById("json").value } }, "*");
+        parent.postMessage({ pluginMessage: { type: "repair", json: loadedJson || document.getElementById("json").value, safetyLevel: selectedLevel(), experimentalGeometry: geometry.checked } }, "*");
       };
       window.onmessage = (event) => {
         const message = event.data.pluginMessage;
@@ -29,14 +67,26 @@
             acc[item.status] = (acc[item.status] || 0) + 1;
             return acc;
           }, {});
-          document.getElementById("summary").textContent =
-            `Restored ${counts.restored || 0}, partial ${counts.partial || 0}, failed ${counts.failed || 0}`;
-          document.getElementById("results").innerHTML = message.results
-            .map((item) => `<li class="${item.status}"><button data-node="${item.figmaNodeId || ""}">select</button> ${item.status}: ${item.nodeName} ${item.messages.join("; ")}</li>`)
-            .join("");
-          document.querySelectorAll("[data-node]").forEach((button) => {
-            button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: button.dataset.node } }, "*");
-          });
+          document.getElementById("summary").textContent = message.mode === "preview"
+            ? `将修改 ${counts.modified || 0}，无需修改 ${counts.verified || 0}，需人工确认 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`
+            : `已修改 ${counts.modified || 0}，无需修改 ${counts.verified || 0}，部分处理 ${counts.partial || 0}，无法处理 ${counts.failed || 0}`;
+          const list = document.getElementById("results");
+          list.replaceChildren(...message.results.map((item) => {
+            const row = document.createElement("li");
+            row.className = item.status;
+            const button = document.createElement("button");
+            button.textContent = "定位";
+            button.disabled = !item.figmaNodeId;
+            button.onclick = () => parent.postMessage({ pluginMessage: { type: "select", nodeId: item.figmaNodeId } }, "*");
+            const statusLabels = message.mode === "preview"
+              ? { modified: "将修改", verified: "无需修改", partial: "需人工确认", failed: "无法处理" }
+              : { modified: "已修改", verified: "无需修改", partial: "部分处理", failed: "无法处理" };
+            const applied = message.mode === "repair" && item.appliedChanges?.length
+              ? ` 已执行：${item.appliedChanges.join("、")}。`
+              : "";
+            row.append(button, document.createTextNode(` ${statusLabels[item.status]}：${item.nodeName}${applied} ${item.messages.join("；")}`));
+            return row;
+          }));
         }
       };
     </script>

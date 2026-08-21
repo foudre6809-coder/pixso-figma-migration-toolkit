@@ -1,6 +1,6 @@
 # Pixso Figma Migration Toolkit
 
-First-round MVP for migrating a Pixso private-deployment design system into Figma Desktop by pairing a Sketch export with `migration-map.json`.
+MVP for migrating a Pixso private-deployment design system into Figma Desktop by pairing a Sketch export with `migration-map.json`.
 
 The project does not assume that private Pixso exposes the same plugin API as public Pixso. The Pixso plugin starts with a capability probe and marks every exported field as `native`, `inferred`, or `unavailable`.
 
@@ -12,6 +12,7 @@ The project does not assume that private Pixso exposes the same plugin API as pu
 - Node matching and layout planning packages with tests.
 - PRD, architecture, compatibility notes, and test plan.
 - Sample `migration-map.json` and capability report.
+- Offline `.pix` container and Kiwi payload research tools, isolated from both plugins.
 
 ## Install
 
@@ -30,6 +31,8 @@ apps/pixso-plugin/manifest.json
 
 Run the capability probe first on representative selected nodes. Export the generated report before relying on full migration export.
 
+The export UI supports current selection, selected artboards, or the current page. Large exports can be split by root-node count; numbered `migration-map-XX-of-YY.json` files are repaired one at a time in Figma. Current-page export is available only when the private Pixso deployment exposes `currentPage.children`.
+
 ## Figma Plugin
 
 In Figma Desktop:
@@ -37,8 +40,13 @@ In Figma Desktop:
 1. Open `Plugins > Development > Import plugin from manifest...`.
 2. Choose `apps/figma-plugin/manifest.json`.
 3. Import the Sketch file.
-4. Run the plugin and paste or load `migration-map.json`.
-5. Review restored, partial, and failed items before touching the full file.
+4. Run the plugin and choose or paste `migration-map.json`.
+5. Choose **诊断** and run **仅扫描预览** first. This stage does not modify Figma.
+6. Use **保守修复（默认）** for the first real run. It writes migration IDs and restores complete single-solid fill/stroke, stroke weight/alignment, corner radii, and node opacity on a confirmed visual owner. It does not change geometry, node types, Auto Layout, or Components.
+7. **结构修复** is opt-in. It can restore Auto Layout direction, padding, gap, sizing, child alignment/growth, confirmed absolute positioning, and min/max sizes only after the existing structural gates pass.
+8. **实验性几何恢复** is a separate opt-in switch and should be tested only on a clean duplicate. It remains off by default.
+
+For acceptance testing, always start from a clean Sketch import. Compare an untouched import, the earlier visually better build, and the current conservative build in separate files. Successfully matched nodes receive a persistent migration ID for reliable repeat runs.
 
 ## Verification
 
@@ -49,8 +57,21 @@ pnpm test
 pnpm build
 ```
 
-## First-Round Limits
+## Offline PIX Research
+
+Build the workspace, then inspect local files without uploading them:
+
+```bash
+node apps/pix-file-probe/dist/binary-cli.js /local/sample-a.pix /local/sample-b.pix --output-dir output
+```
+
+The parser prototype confirms only evidence that round-trips byte-for-byte and leaves unverified x/y or design-property mappings unset. Real `.pix` files and extracted assets must not be committed.
+
+## Current Limits
 
 - Pixso API access must be verified locally with the capability probe.
 - Component instance restoration is conservative. The plugin reports uncertain matches instead of binding incorrectly.
+- Pixso style and variable IDs are retained as diagnostics but are not assumed to equal Figma IDs. Complete single-solid values can still be restored; an existing Figma style/variable binding is preserved.
+- HUG height is restored as Figma Auto sizing with the Pixso height retained as a minimum, rather than forcing a fixed row height.
+- Cancellation takes effect between root-node batches, not midway through one large artboard.
 - Variants, variables, constraints, and prototypes are scanned as future work, not fully restored in this MVP.

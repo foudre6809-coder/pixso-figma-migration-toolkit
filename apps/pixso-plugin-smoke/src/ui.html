@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <title>Pixso Plugin Execution Smoke</title>
+  </head>
+  <body>
+    <p id="status">等待 Pixso 主线程执行……</p>
+    <style>
+      body { font: 12px system-ui, sans-serif; margin: 16px; }
+      p { margin: 0; }
+    </style>
+    <script>
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+        if (message?.type === "smoke-complete") {
+          const node = message.node;
+          document.getElementById("status").textContent =
+            `PASS: ${node.name} ${node.width}×${node.height}`;
+        }
+      };
+    </script>
+  </body>
+</html>

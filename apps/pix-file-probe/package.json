@@ -1,0 +1,17 @@
+{
+  "name": "@pixso-figma-migration/pix-file-probe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "pix-file-probe": "dist/probe-cli.js",
+    "pix-binary-inspect": "dist/binary-cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@pixso-figma-migration/pix-parser": "workspace:*",
+    "kiwi-schema": "0.5.0"
+  }
+}

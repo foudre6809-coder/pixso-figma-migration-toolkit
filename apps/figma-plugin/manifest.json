@@ -1,5 +1,5 @@
 {
-  "name": "Pixso Migration Repair",
+  "name": "Pixso 迁移修复工具",
   "id": "pixso-migration-repair",
   "api": "1.0.0",
   "main": "dist/main.js",

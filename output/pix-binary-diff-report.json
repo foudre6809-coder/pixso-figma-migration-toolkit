@@ -1,0 +1,4335 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-15T03:51:18.686Z",
+  "privacy": {
+    "localOnly": true,
+    "pathsRedacted": true,
+    "nodeNamesRedacted": true,
+    "realFilesCommitted": false
+  },
+  "samples": [
+    {
+      "label": "sample-001",
+      "sha256": "9254b4ef05ff4419115e2008f35e5becbc3a6c3e99a30583b0775a0a062aabfe",
+      "fileSizeBytes": 15505,
+      "containerEntries": [
+        {
+          "category": "asset.png",
+          "nameSha256": "c32ac09f3920a0bc8348b5de7a23ec36dd07d4b381b80a809550a3e1e9eb9be2",
+          "compressedSize": 428,
+          "uncompressedSize": 8409,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "design-payload.pix",
+          "nameSha256": "a686ce344f199bd4863c9d3e70b4534515eac8bb7ce9e36f45465d8f6d16714a",
+          "compressedSize": 504,
+          "uncompressedSize": 499,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "VERSION",
+          "compressedSize": 42,
+          "uncompressedSize": 50,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "pixso.binary",
+          "compressedSize": 13627,
+          "uncompressedSize": 31944,
+          "method": 8,
+          "encrypted": false
+        }
+      ],
+      "pixsoBinary": {
+        "sizeBytes": 31944,
+        "sha256": "44074d80f9e6b7186ef03254901479d750558e669332a0a9424969ffa618b4b7",
+        "head64Hex": "f2015061696e7400021b7479706500fe020001636f6c6f7200de0300026f7061636974790009000376697369626c6500010004626c656e644d6f646500960200",
+        "tail64Hex": "036100090004526563740001047800090001790009000277000900036800090004436f6d6d616e644e756d000102726f756e6400070001636f756e7400070002",
+        "entropyBitsPerByte": 5.5342,
+        "entropyBlocks": [
+          {
+            "offset": 0,
+            "length": 4096,
+            "bitsPerByte": 5.1473
+          },
+          {
+            "offset": 4096,
+            "length": 4096,
+            "bitsPerByte": 5.2568
+          },
+          {
+            "offset": 8192,
+            "length": 4096,
+            "bitsPerByte": 5.3191
+          },
+          {
+            "offset": 12288,
+            "length": 4096,
+            "bitsPerByte": 5.1177
+          },
+          {
+            "offset": 16384,
+            "length": 4096,
+            "bitsPerByte": 4.9603
+          },
+          {
+            "offset": 20480,
+            "length": 4096,
+            "bitsPerByte": 4.9114
+          },
+          {
+            "offset": 24576,
+            "length": 4096,
+            "bitsPerByte": 5.1443
+          },
+          {
+            "offset": 28672,
+            "length": 3272,
+            "bitsPerByte": 5.0114
+          }
+        ],
+        "readableSchemaStrings": [
+          {
+            "offset": 5405,
+            "value": "0miterLimit"
+          },
+          {
+            "offset": 5419,
+            "value": "1backgroundColor"
+          },
+          {
+            "offset": 5439,
+            "value": "2backgroundEnabled"
+          },
+          {
+            "offset": 5460,
+            "value": "3backgroundOpacity"
+          },
+          {
+            "offset": 5481,
+            "value": "4backgroundPaints"
+          },
+          {
+            "offset": 5529,
+            "value": "6exportContentsOnly"
+          },
+          {
+            "offset": 5551,
+            "value": "7exportSettings"
+          },
+          {
+            "offset": 5592,
+            "value": "9fontName"
+          },
+          {
+            "offset": 5735,
+            "value": "AtextCase"
+          },
+          {
+            "offset": 5748,
+            "value": "BtextData"
+          },
+          {
+            "offset": 5760,
+            "value": "CtextDecoration"
+          },
+          {
+            "offset": 5779,
+            "value": "DtextTracking"
+          },
+          {
+            "offset": 5795,
+            "value": "EtextUserLayoutVersion"
+          },
+          {
+            "offset": 5820,
+            "value": "FletterSpacing"
+          },
+          {
+            "offset": 5837,
+            "value": "GlineHeight"
+          },
+          {
+            "offset": 5851,
+            "value": "HhorizontalConstraint"
+          },
+          {
+            "offset": 5876,
+            "value": "IverticalConstraint"
+          },
+          {
+            "offset": 5899,
+            "value": "JderivedSymbolData"
+          },
+          {
+            "offset": 5954,
+            "value": "LcomponentKey"
+          },
+          {
+            "offset": 5970,
+            "value": "MinheritEffectStyleID"
+          },
+          {
+            "offset": 5995,
+            "value": "NinheritExportStyleID"
+          },
+          {
+            "offset": 6020,
+            "value": "OinheritFillStyleID"
+          },
+          {
+            "offset": 6043,
+            "value": "PinheritFillStyleIDForBackground"
+          },
+          {
+            "offset": 6079,
+            "value": "QinheritFillStyleIDForStroke"
+          },
+          {
+            "offset": 6111,
+            "value": "RinheritGridStyleID"
+          },
+          {
+            "offset": 6134,
+            "value": "SinheritStrokeStyleID"
+          },
+          {
+            "offset": 6159,
+            "value": "TinheritTextStyleID"
+          },
+          {
+            "offset": 6182,
+            "value": "UinteractionDuration"
+          },
+          {
+            "offset": 6205,
+            "value": "VinteractionMaintained"
+          },
+          {
+            "offset": 6230,
+            "value": "WoverriddenSymbolID"
+          },
+          {
+            "offset": 6253,
+            "value": "XoverrideKey"
+          },
+          {
+            "offset": 6269,
+            "value": "YkeyTrigger"
+          },
+          {
+            "offset": 6283,
+            "value": "ZnavigationType"
+          },
+          {
+            "offset": 6373,
+            "value": "_proportionsConstrained"
+          },
+          {
+            "offset": 6428,
+            "value": "aprototypeDevice"
+          },
+          {
+            "offset": 6447,
+            "value": "bprototypeInteractions"
+          },
+          {
+            "offset": 6497,
+            "value": "doverlayBackgroundAppearance"
+          },
+          {
+            "offset": 6528,
+            "value": "eoverlayBackgroundInteraction"
+          },
+          {
+            "offset": 6561,
+            "value": "foverlayPositionType"
+          },
+          {
+            "offset": 6585,
+            "value": "goverlayRelativePosition"
+          },
+          {
+            "offset": 6613,
+            "value": "htransitionDuration"
+          },
+          {
+            "offset": 6635,
+            "value": "itransitionNodeID"
+          },
+          {
+            "offset": 6656,
+            "value": "jtransitionPreserveScroll"
+          },
+          {
+            "offset": 6684,
+            "value": "ktransitionShouldSmartAnimate"
+          },
+          {
+            "offset": 6716,
+            "value": "ltransitionTimeout"
+          },
+          {
+            "offset": 6737,
+            "value": "mtransitionType"
+          },
+          {
+            "offset": 6756,
+            "value": "nscrollBehavior"
+          },
+          {
+            "offset": 6775,
+            "value": "oscrollDirection"
+          },
+          {
+            "offset": 6795,
+            "value": "prectangleBottomLeftCornerRadius"
+          },
+          {
+            "offset": 6830,
+            "value": "qrectangleBottomRightCornerRadius"
+          },
+          {
+            "offset": 6866,
+            "value": "rrectangleCornerRadiiIndependent"
+          },
+          {
+            "offset": 6901,
+            "value": "srectangleCornerToolIndependent"
+          },
+          {
+            "offset": 6935,
+            "value": "trectangleTopLeftCornerRadius"
+          },
+          {
+            "offset": 6967,
+            "value": "urectangleTopRightCornerRadius"
+          },
+          {
+            "offset": 7000,
+            "value": "vframeMaskDisabled"
+          },
+          {
+            "offset": 7021,
+            "value": "whyperlink"
+          },
+          {
+            "offset": 7035,
+            "value": "xsharedStyleMasterData"
+          },
+          {
+            "offset": 7061,
+            "value": "ysharedStyleReference"
+          },
+          {
+            "offset": 7086,
+            "value": "zautoRename"
+          },
+          {
+            "offset": 10590,
+            "value": "-flodingSymbolSwitch"
+          },
+          {
+            "offset": 10645,
+            "value": "0foldingSymbolType"
+          },
+          {
+            "offset": 10666,
+            "value": "1blockMarkerIds"
+          },
+          {
+            "offset": 10706,
+            "value": "3inactiveFillPaint"
+          },
+          {
+            "offset": 10727,
+            "value": "4oneDimChart"
+          },
+          {
+            "offset": 10742,
+            "value": "5BlockMarkerParams"
+          },
+          {
+            "offset": 17203,
+            "value": "CREATED"
+          },
+          {
+            "offset": 17981,
+            "value": "-PROD_RADIO"
+          },
+          {
+            "offset": 18028,
+            "value": "0PROD_SEARCHBOX"
+          },
+          {
+            "offset": 18046,
+            "value": "1PROD_INPUTBOX"
+          },
+          {
+            "offset": 18063,
+            "value": "2PROD_PASSWORDINPUTBOX"
+          },
+          {
+            "offset": 18088,
+            "value": "3PROD_ICONLIST"
+          },
+          {
+            "offset": 18105,
+            "value": "4PROD_SWITCHLIST"
+          },
+          {
+            "offset": 18124,
+            "value": "5PROD_TOAST"
+          },
+          {
+            "offset": 18138,
+            "value": "6PROD_ALERT"
+          },
+          {
+            "offset": 18152,
+            "value": "7PROD_INPUTALERT"
+          },
+          {
+            "offset": 18171,
+            "value": "8PROD_BOTTONALERT"
+          },
+          {
+            "offset": 18191,
+            "value": "9PROD_CARD"
+          },
+          {
+            "offset": 18330,
+            "value": "APROD_TICKALERT"
+          },
+          {
+            "offset": 18348,
+            "value": "BPROD_INPUTRANGESEARCH"
+          },
+          {
+            "offset": 18373,
+            "value": "CPROD_INPUTDROP"
+          },
+          {
+            "offset": 18391,
+            "value": "DPROD_INPUTDATA"
+          },
+          {
+            "offset": 18409,
+            "value": "EPROD_INPUTMULROW"
+          },
+          {
+            "offset": 18429,
+            "value": "FPROD_INPUTVERIFICATION"
+          },
+          {
+            "offset": 18455,
+            "value": "GPROD_MENUOPTIONECOMPONENT"
+          },
+          {
+            "offset": 18484,
+            "value": "HPROD_SIDENAVIGATBAR"
+          },
+          {
+            "offset": 18507,
+            "value": "IPROD_DATASELECTOR"
+          },
+          {
+            "offset": 18528,
+            "value": "JPROD_PAGERCOMPONENT"
+          },
+          {
+            "offset": 18551,
+            "value": "KPROD_STEPPER"
+          },
+          {
+            "offset": 18567,
+            "value": "LPROD_MAPCOMPONENT"
+          },
+          {
+            "offset": 18588,
+            "value": "MPROD_HISTOGRAM"
+          },
+          {
+            "offset": 18606,
+            "value": "NPROD_PIECHART"
+          },
+          {
+            "offset": 18623,
+            "value": "OPROD_LINECHART"
+          },
+          {
+            "offset": 18641,
+            "value": "PPROD_ICONBUTTON"
+          },
+          {
+            "offset": 18660,
+            "value": "QPROD_MOREBUTTON"
+          },
+          {
+            "offset": 18679,
+            "value": "RPROD_SCOREBAR"
+          },
+          {
+            "offset": 18696,
+            "value": "SPROD_PROCESSBAR"
+          },
+          {
+            "offset": 18715,
+            "value": "TPROD_DRAGBAR"
+          },
+          {
+            "offset": 18731,
+            "value": "UPROD_SVGFRAME"
+          },
+          {
+            "offset": 18748,
+            "value": "VPROD_LARGECARD3"
+          },
+          {
+            "offset": 18767,
+            "value": "WPROD_LARGECARD4"
+          },
+          {
+            "offset": 18786,
+            "value": "XPROD_TOASTLOADING"
+          },
+          {
+            "offset": 18807,
+            "value": "YPROD_SIDENAVIGATBAR2"
+          },
+          {
+            "offset": 18831,
+            "value": "ZPROD_PAGERCOMPONENT2"
+          },
+          {
+            "offset": 18934,
+            "value": "_PROD_TOASTWARNPC"
+          },
+          {
+            "offset": 18976,
+            "value": "aPROD_TOASTLOADINGPC"
+          },
+          {
+            "offset": 18999,
+            "value": "bPROD_TOASTSINGLEBUTTONPC"
+          },
+          {
+            "offset": 19027,
+            "value": "cPROD_TOASTDOUBLEBUTTONPC"
+          },
+          {
+            "offset": 19055,
+            "value": "dPROD_TOASTTIPSPC"
+          },
+          {
+            "offset": 19075,
+            "value": "ePROD_PLUSNAVIGATBAR"
+          },
+          {
+            "offset": 19098,
+            "value": "fPROD_STEPPER2"
+          },
+          {
+            "offset": 19115,
+            "value": "gSECTION"
+          },
+          {
+            "offset": 19126,
+            "value": "hPROD_BREADCRUMB"
+          },
+          {
+            "offset": 19145,
+            "value": "iPROD_BREADCRUMBITEM"
+          },
+          {
+            "offset": 19168,
+            "value": "jPROD_IBUTTON"
+          },
+          {
+            "offset": 19184,
+            "value": "kPROD_IPLACEHOLDER"
+          },
+          {
+            "offset": 19205,
+            "value": "lPROD_IMASK"
+          },
+          {
+            "offset": 19219,
+            "value": "mPROD_ISTATUSBAR"
+          },
+          {
+            "offset": 19238,
+            "value": "nPROD_IINPUTBOX"
+          },
+          {
+            "offset": 19256,
+            "value": "oPROD_IRADIOANDCHECKBUTTON"
+          },
+          {
+            "offset": 19285,
+            "value": "pPROD_IRADIOBUTTON"
+          },
+          {
+            "offset": 19306,
+            "value": "qPROD_ISTEPPER"
+          },
+          {
+            "offset": 19323,
+            "value": "rPROD_VIEWPORTTEXT"
+          },
+          {
+            "offset": 19344,
+            "value": "sPROD_RECTBOX"
+          },
+          {
+            "offset": 19360,
+            "value": "tPROD_SELECTBOX"
+          },
+          {
+            "offset": 19378,
+            "value": "uPROD_SELECTOPTION"
+          },
+          {
+            "offset": 19399,
+            "value": "vPROD_SMARTTABLE"
+          },
+          {
+            "offset": 19418,
+            "value": "wPROD_SMARTTABLECELL"
+          },
+          {
+            "offset": 19441,
+            "value": "xPROD_BLOCK"
+          },
+          {
+            "offset": 19455,
+            "value": "yPROD_BLOCKDOCUMENT"
+          },
+          {
+            "offset": 19477,
+            "value": "zPROD_TOPBARPC"
+          },
+          {
+            "offset": 20236,
+            "value": "TARGETSIDE"
+          },
+          {
+            "offset": 20720,
+            "value": "H1"
+          },
+          {
+            "offset": 21074,
+            "value": "MONOTONE"
+          },
+          {
+            "offset": 25299,
+            "value": "CENTER"
+          },
+          {
+            "offset": 25349,
+            "value": "HORIZONTAL_HEXAGONAL"
+          },
+          {
+            "offset": 25668,
+            "value": "HOVER_STATE"
+          },
+          {
+            "offset": 26571,
+            "value": "ORDERED_LIST"
+          },
+          {
+            "offset": 26634,
+            "value": "ENDING"
+          },
+          {
+            "offset": 26664,
+            "value": "OUTLINE"
+          },
+          {
+            "offset": 26710,
+            "value": "CAP_HEIGHT"
+          },
+          {
+            "offset": 26751,
+            "value": "C2PC"
+          },
+          {
+            "offset": 27110,
+            "value": "-OPBD"
+          },
+          {
+            "offset": 27134,
+            "value": "0PKNA"
+          },
+          {
+            "offset": 27142,
+            "value": "1LTRA"
+          },
+          {
+            "offset": 27150,
+            "value": "2LTRM"
+          },
+          {
+            "offset": 27158,
+            "value": "3RTLA"
+          },
+          {
+            "offset": 27166,
+            "value": "4RTLM"
+          },
+          {
+            "offset": 27174,
+            "value": "5ABRV"
+          },
+          {
+            "offset": 27182,
+            "value": "6ABVM"
+          },
+          {
+            "offset": 27190,
+            "value": "7ABVS"
+          },
+          {
+            "offset": 27198,
+            "value": "8VALT"
+          },
+          {
+            "offset": 27206,
+            "value": "9VHAL"
+          },
+          {
+            "offset": 27270,
+            "value": "ACURS"
+          },
+          {
+            "offset": 27278,
+            "value": "BDIST"
+          },
+          {
+            "offset": 27286,
+            "value": "CEXPT"
+          },
+          {
+            "offset": 27294,
+            "value": "DFALT"
+          },
+          {
+            "offset": 27302,
+            "value": "EFINA"
+          },
+          {
+            "offset": 27310,
+            "value": "FFIN2"
+          },
+          {
+            "offset": 27318,
+            "value": "GFIN3"
+          },
+          {
+            "offset": 27326,
+            "value": "HHALF"
+          },
+          {
+            "offset": 27334,
+            "value": "IHALN"
+          },
+          {
+            "offset": 27342,
+            "value": "JHKNA"
+          },
+          {
+            "offset": 27350,
+            "value": "KHNGL"
+          },
+          {
+            "offset": 27358,
+            "value": "LHOJO"
+          },
+          {
+            "offset": 27366,
+            "value": "MINIT"
+          },
+          {
+            "offset": 27374,
+            "value": "NISOL"
+          },
+          {
+            "offset": 27382,
+            "value": "OJP78"
+          },
+          {
+            "offset": 27390,
+            "value": "PJP83"
+          },
+          {
+            "offset": 27398,
+            "value": "QJP90"
+          },
+          {
+            "offset": 27406,
+            "value": "RJP04"
+          },
+          {
+            "offset": 27414,
+            "value": "SLJMO"
+          },
+          {
+            "offset": 27422,
+            "value": "TLOCL"
+          },
+          {
+            "offset": 27430,
+            "value": "UMARK"
+          },
+          {
+            "offset": 27438,
+            "value": "VMEDI"
+          },
+          {
+            "offset": 27446,
+            "value": "WMED2"
+          },
+          {
+            "offset": 27454,
+            "value": "XMKMK"
+          },
+          {
+            "offset": 27462,
+            "value": "YNLCK"
+          },
+          {
+            "offset": 27470,
+            "value": "ZNUKT"
+          },
+          {
+            "offset": 27510,
+            "value": "_PSTS"
+          },
+          {
+            "offset": 27526,
+            "value": "aRPHF"
+          },
+          {
+            "offset": 27534,
+            "value": "bRUBY"
+          },
+          {
+            "offset": 27542,
+            "value": "cSMPL"
+          },
+          {
+            "offset": 27550,
+            "value": "dTJMO"
+          },
+          {
+            "offset": 27558,
+            "value": "eTNAM"
+          },
+          {
+            "offset": 27566,
+            "value": "fTRAD"
+          },
+          {
+            "offset": 27574,
+            "value": "gVATU"
+          },
+          {
+            "offset": 27582,
+            "value": "hVJMO"
+          },
+          {
+            "offset": 27590,
+            "value": "iVKNA"
+          },
+          {
+            "offset": 27598,
+            "value": "jVKRN"
+          },
+          {
+            "offset": 27606,
+            "value": "kVRTR"
+          },
+          {
+            "offset": 27614,
+            "value": "lVRT2"
+          },
+          {
+            "offset": 27622,
+            "value": "mSS01"
+          },
+          {
+            "offset": 27630,
+            "value": "nSS02"
+          },
+          {
+            "offset": 27638,
+            "value": "oSS03"
+          },
+          {
+            "offset": 27646,
+            "value": "pSS04"
+          },
+          {
+            "offset": 27654,
+            "value": "qSS05"
+          },
+          {
+            "offset": 27662,
+            "value": "rSS06"
+          },
+          {
+            "offset": 27670,
+            "value": "sSS07"
+          },
+          {
+            "offset": 27678,
+            "value": "tSS08"
+          },
+          {
+            "offset": 27686,
+            "value": "uSS09"
+          },
+          {
+            "offset": 27694,
+            "value": "vSS10"
+          },
+          {
+            "offset": 27702,
+            "value": "wSS11"
+          },
+          {
+            "offset": 27710,
+            "value": "xSS12"
+          },
+          {
+            "offset": 27718,
+            "value": "ySS13"
+          },
+          {
+            "offset": 27726,
+            "value": "zSS14"
+          },
+          {
+            "offset": 28722,
+            "value": "STATE_GROUP"
+          },
+          {
+            "offset": 28765,
+            "value": "TEXT"
+          },
+          {
+            "offset": 28835,
+            "value": "TEXT_DATA"
+          },
+          {
+            "offset": 28920,
+            "value": "Figma"
+          },
+          {
+            "offset": 28984,
+            "value": "ImportDoc"
+          },
+          {
+            "offset": 29019,
+            "value": "DESIGN"
+          },
+          {
+            "offset": 29058,
+            "value": "WRAP"
+          },
+          {
+            "offset": 29087,
+            "value": "SPACE_BETWEEN"
+          },
+          {
+            "offset": 29129,
+            "value": "LTR"
+          },
+          {
+            "offset": 29173,
+            "value": "FLOAT"
+          },
+          {
+            "offset": 29340,
+            "value": "FLOAT"
+          },
+          {
+            "offset": 29442,
+            "value": "CORNER_RADIUS"
+          },
+          {
+            "offset": 30145,
+            "value": "TEXT_CONTENT"
+          },
+          {
+            "offset": 30492,
+            "value": "SUBTRACTION"
+          },
+          {
+            "offset": 30765,
+            "value": "COMPONENT_PROP_ASSIGNMENTS"
+          },
+          {
+            "offset": 30823,
+            "value": "ANDROID"
+          },
+          {
+            "offset": 30875,
+            "value": "SYMMETRY"
+          },
+          {
+            "offset": 30918,
+            "value": "LINEAR"
+          },
+          {
+            "offset": 30949,
+            "value": "RELATIVE"
+          },
+          {
+            "offset": 30986,
+            "value": "REVERSE"
+          },
+          {
+            "offset": 31030,
+            "value": "STROKE"
+          },
+          {
+            "offset": 31575,
+            "value": "ACCESSIBILITY"
+          },
+          {
+            "offset": 31668,
+            "value": "PROGRESSIVE"
+          }
+        ],
+        "encodingScans": {
+          "varintCandidates": 31944,
+          "zigzagSmallIntegerCandidates": 31944,
+          "lengthPrefixedStringCandidates": 916,
+          "float32LECandidates": 5597,
+          "float32BECandidates": 5593,
+          "float64LECandidates": 630,
+          "float64BECandidates": 630
+        }
+      },
+      "compressionSignals": [
+        {
+          "source": "redacted-entry",
+          "format": "zstd",
+          "offset": 24,
+          "confidence": "high"
+        }
+      ],
+      "serializationSignals": [
+        {
+          "format": "Kiwi binary schema",
+          "confidence": "confirmed",
+          "evidence": "242 definitions decoded; PixsoMsg/PixsoNode schema present."
+        },
+        {
+          "format": "Kiwi PixsoMsg payload",
+          "confidence": "confirmed",
+          "evidence": "decode/re-encode is byte-for-byte identical."
+        },
+        {
+          "format": "Protobuf wire scan",
+          "confidence": "not-found",
+          "evidence": "1 valid leading fields, 0% coverage; no Protobuf magic exists."
+        },
+        {
+          "format": "MessagePack/CBOR",
+          "confidence": "not-found",
+          "evidence": "No complete top-level collection signature; first bytes are consumed by confirmed Kiwi schema decoding."
+        },
+        {
+          "format": "BSON",
+          "confidence": "not-found",
+          "evidence": "BSON length and terminator heuristic did not match."
+        },
+        {
+          "format": "FlatBuffers",
+          "confidence": "not-found",
+          "evidence": "No plausible four-byte file identifier."
+        }
+      ],
+      "decoded": {
+        "rootMessage": "PixsoMsg",
+        "roundTripExact": true,
+        "schemaDefinitionCount": 242,
+        "payloadBytes": 1061,
+        "nodeCount": 12,
+        "locatedRecordBoundaryCount": 12,
+        "nodeTypeCounts": {
+          "SYMBOL": 1,
+          "FRAME": 4,
+          "CANVAS": 7
+        },
+        "geometryCandidates": {
+          "sizeFieldNodes": 5,
+          "transformFieldNodes": 5,
+          "xYStatus": "not-found",
+          "coordinateModel": "unknown"
+        },
+        "attributeCandidates": {
+          "layoutModeNodes": 4,
+          "paddingNodes": 4,
+          "gapNodes": 4,
+          "strokeNodes": 2
+        }
+      }
+    },
+    {
+      "label": "sample-002",
+      "sha256": "bfd99ea1e6df3e1bb55da2d33f8aeffd9ada49461eaa446106b73383f1a56054",
+      "fileSizeBytes": 11562673,
+      "containerEntries": [
+        {
+          "category": "asset.png",
+          "nameSha256": "378081fe8d4c2a3d2410f19209e98d5c6bb5630807e3f06957f859faa4bf2cda",
+          "compressedSize": 26303,
+          "uncompressedSize": 33348,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "design-payload.pix",
+          "nameSha256": "e8da0657031f73a75d647b29e3da0e4cc397ee2a88a170fb31d4ca7752fcd80a",
+          "compressedSize": 5158286,
+          "uncompressedSize": 5169013,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "3298d5351aede33006e2b0e4f90573ccba553aff079a28a7100237d98e2ffdde",
+          "compressedSize": 13724,
+          "uncompressedSize": 13719,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "85b51db537775a03dc2208be82bf643b7e913da44b1e5cb10ec65c78599868c8",
+          "compressedSize": 1715,
+          "uncompressedSize": 1838,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "db9db93bfcc2aec5cc7d32b3e7d971d2ee44f3685f0148309d3a19f69588cf57",
+          "compressedSize": 1908,
+          "uncompressedSize": 1931,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "5c17ce24e2a982f964e9885bce20e7298d8a91f0779db31da4441517aa8e338c",
+          "compressedSize": 20596,
+          "uncompressedSize": 20852,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "26c16e0c45be2d1e21f61a6c1adb3d6b0146e936adef67d35520efa0337cc74d",
+          "compressedSize": 9268,
+          "uncompressedSize": 9263,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "e18ad4008f99049a28a89b4f382fb386a265e6278e611ed4d2371aa021db3096",
+          "compressedSize": 278101,
+          "uncompressedSize": 278016,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "d7766f536a6a081fdc481864dea4492023cf63168c07862ce98051f5a83f60f7",
+          "compressedSize": 9513,
+          "uncompressedSize": 9508,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "7e5050bf3ee478bc6d0200afaf33a0a40be01f3692504c27da69d9b339bf655f",
+          "compressedSize": 497143,
+          "uncompressedSize": 528821,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "1ba3572a7b101573a3cf401f31136fd047ca1514e61917afc2451d1e08149f29",
+          "compressedSize": 8608,
+          "uncompressedSize": 8603,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "bea9c330a470676d5511ab50a92934bd6453e6d28673cb42b8e8625e7d4f99ec",
+          "compressedSize": 60931,
+          "uncompressedSize": 62508,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "502dc1cac2626b9affae5a39b39e970128b5756017f78c5f38aca943c32afc18",
+          "compressedSize": 224,
+          "uncompressedSize": 264,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "b95e926c931f92acdcebb5007f99c324a288a25cc368e03fa3e8fb908b3c9803",
+          "compressedSize": 25434,
+          "uncompressedSize": 25424,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "3ada34c00dde5975edb47a3a939a6ba88f9282ffbb9b86df8ccf2f6c1da3b1c8",
+          "compressedSize": 82236,
+          "uncompressedSize": 82206,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "aebc4dd061c7662b39f2043d27aba9ee50a44fee93a8335f4e114fd93ebfd189",
+          "compressedSize": 928991,
+          "uncompressedSize": 928706,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "8a68ef7ef2a31987214cbb4e20416bed2d0a616529f4cc93890f9ebd406be74a",
+          "compressedSize": 480738,
+          "uncompressedSize": 537494,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "c0c2026dd79194f99b0dbba946812c05b6505fe3420c7b36d3837c0dd8a5c455",
+          "compressedSize": 50704,
+          "uncompressedSize": 50684,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "338eef0fc141a9e0a3b82cce2c5c6bc1fcc11a177b974654865a2b1687c5bec7",
+          "compressedSize": 5629,
+          "uncompressedSize": 5624,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "1fe4f95eb193c89a62ac0fce3386053afe910c5e193b4e42192307d0c8175859",
+          "compressedSize": 67573,
+          "uncompressedSize": 67569,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "e1594f989957810555003d26db7a21734ceedbf62f2030a243081593de120e51",
+          "compressedSize": 91909,
+          "uncompressedSize": 92042,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "270fd7a4d37b4be0b9450e4c75830f35d6a8f69e125fefe1d89166e613c6ecc8",
+          "compressedSize": 28630,
+          "uncompressedSize": 28620,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "3f708f6b86cd54004837f1cfbe13e09ff2727d765a94ca3e2dc24372435dd216",
+          "compressedSize": 9570,
+          "uncompressedSize": 9595,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "605abc027022d973af2e8c0db29ad76c05785fa3e5ffd715c7ba9561657f01a6",
+          "compressedSize": 37038,
+          "uncompressedSize": 38732,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "0344900ccab1b3651a7252cfa6c766ecd245a0af52b81d585c68c433557bb64b",
+          "compressedSize": 43818,
+          "uncompressedSize": 43803,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "da01802d12e92fd6f5831bcf13430104cce81160268d3501d605f2c7365f7442",
+          "compressedSize": 577104,
+          "uncompressedSize": 583297,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "29257271482b1b7d75ecbbd7271c1d4c2860dc530db4f2724512904b99750411",
+          "compressedSize": 624029,
+          "uncompressedSize": 623936,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "849d2a2a863841f85992338937bde48f708b13046140ba340195b09757f87596",
+          "compressedSize": 30534,
+          "uncompressedSize": 30524,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "c2698dfa89771ee2aa64459000e43257f9662e0d863cf6e4c88ad12fc3aa7032",
+          "compressedSize": 1230653,
+          "uncompressedSize": 1230273,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "asset.png",
+          "nameSha256": "073c8475df379c057c6374aa0ad15e521823c072a41912773f63c953e71098c9",
+          "compressedSize": 1140774,
+          "uncompressedSize": 1140424,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "VERSION",
+          "compressedSize": 42,
+          "uncompressedSize": 50,
+          "method": 8,
+          "encrypted": false
+        },
+        {
+          "category": "pixso.binary",
+          "compressedSize": 12539,
+          "uncompressedSize": 29240,
+          "method": 8,
+          "encrypted": false
+        }
+      ],
+      "pixsoBinary": {
+        "sizeBytes": 29240,
+        "sha256": "7d832c704ae1f3249fb330077568f8e1efe9508cd9f92e713a586e2312f5aeb5",
+        "head64Hex": "e0015061696e740002157479706500de020001636f6c6f7200ba0300026f7061636974790009000376697369626c6500010004626c656e644d6f646500820200",
+        "tail64Hex": "036100090004526563740001047800090001790009000277000900036800090004436f6d6d616e644e756d000102726f756e6400070001636f756e7400070002",
+        "entropyBitsPerByte": 5.5343,
+        "entropyBlocks": [
+          {
+            "offset": 0,
+            "length": 4096,
+            "bitsPerByte": 5.1594
+          },
+          {
+            "offset": 4096,
+            "length": 4096,
+            "bitsPerByte": 5.2886
+          },
+          {
+            "offset": 8192,
+            "length": 4096,
+            "bitsPerByte": 5.244
+          },
+          {
+            "offset": 12288,
+            "length": 4096,
+            "bitsPerByte": 5.407
+          },
+          {
+            "offset": 16384,
+            "length": 4096,
+            "bitsPerByte": 4.9026
+          },
+          {
+            "offset": 20480,
+            "length": 4096,
+            "bitsPerByte": 4.9756
+          },
+          {
+            "offset": 24576,
+            "length": 4096,
+            "bitsPerByte": 5.1104
+          },
+          {
+            "offset": 28672,
+            "length": 568,
+            "bitsPerByte": 5.0655
+          }
+        ],
+        "readableSchemaStrings": [
+          {
+            "offset": 4479,
+            "value": "0miterLimit"
+          },
+          {
+            "offset": 4493,
+            "value": "1backgroundColor"
+          },
+          {
+            "offset": 4513,
+            "value": "2backgroundEnabled"
+          },
+          {
+            "offset": 4534,
+            "value": "3backgroundOpacity"
+          },
+          {
+            "offset": 4555,
+            "value": "4backgroundPaints"
+          },
+          {
+            "offset": 4603,
+            "value": "6exportContentsOnly"
+          },
+          {
+            "offset": 4625,
+            "value": "7exportSettings"
+          },
+          {
+            "offset": 4666,
+            "value": "9fontName"
+          },
+          {
+            "offset": 4809,
+            "value": "AtextCase"
+          },
+          {
+            "offset": 4822,
+            "value": "BtextData"
+          },
+          {
+            "offset": 4834,
+            "value": "CtextDecoration"
+          },
+          {
+            "offset": 4853,
+            "value": "DtextTracking"
+          },
+          {
+            "offset": 4869,
+            "value": "EtextUserLayoutVersion"
+          },
+          {
+            "offset": 4894,
+            "value": "FletterSpacing"
+          },
+          {
+            "offset": 4911,
+            "value": "GlineHeight"
+          },
+          {
+            "offset": 4925,
+            "value": "HhorizontalConstraint"
+          },
+          {
+            "offset": 4950,
+            "value": "IverticalConstraint"
+          },
+          {
+            "offset": 4973,
+            "value": "JderivedSymbolData"
+          },
+          {
+            "offset": 5028,
+            "value": "LcomponentKey"
+          },
+          {
+            "offset": 5044,
+            "value": "MinheritEffectStyleID"
+          },
+          {
+            "offset": 5069,
+            "value": "NinheritExportStyleID"
+          },
+          {
+            "offset": 5094,
+            "value": "OinheritFillStyleID"
+          },
+          {
+            "offset": 5117,
+            "value": "PinheritFillStyleIDForBackground"
+          },
+          {
+            "offset": 5153,
+            "value": "QinheritFillStyleIDForStroke"
+          },
+          {
+            "offset": 5185,
+            "value": "RinheritGridStyleID"
+          },
+          {
+            "offset": 5208,
+            "value": "SinheritStrokeStyleID"
+          },
+          {
+            "offset": 5233,
+            "value": "TinheritTextStyleID"
+          },
+          {
+            "offset": 5256,
+            "value": "UinteractionDuration"
+          },
+          {
+            "offset": 5279,
+            "value": "VinteractionMaintained"
+          },
+          {
+            "offset": 5304,
+            "value": "WoverriddenSymbolID"
+          },
+          {
+            "offset": 5327,
+            "value": "XoverrideKey"
+          },
+          {
+            "offset": 5343,
+            "value": "YkeyTrigger"
+          },
+          {
+            "offset": 5357,
+            "value": "ZnavigationType"
+          },
+          {
+            "offset": 5447,
+            "value": "_proportionsConstrained"
+          },
+          {
+            "offset": 5502,
+            "value": "aprototypeDevice"
+          },
+          {
+            "offset": 5521,
+            "value": "bprototypeInteractions"
+          },
+          {
+            "offset": 5571,
+            "value": "doverlayBackgroundAppearance"
+          },
+          {
+            "offset": 5602,
+            "value": "eoverlayBackgroundInteraction"
+          },
+          {
+            "offset": 5635,
+            "value": "foverlayPositionType"
+          },
+          {
+            "offset": 5659,
+            "value": "goverlayRelativePosition"
+          },
+          {
+            "offset": 5687,
+            "value": "htransitionDuration"
+          },
+          {
+            "offset": 5709,
+            "value": "itransitionNodeID"
+          },
+          {
+            "offset": 5730,
+            "value": "jtransitionPreserveScroll"
+          },
+          {
+            "offset": 5758,
+            "value": "ktransitionShouldSmartAnimate"
+          },
+          {
+            "offset": 5790,
+            "value": "ltransitionTimeout"
+          },
+          {
+            "offset": 5811,
+            "value": "mtransitionType"
+          },
+          {
+            "offset": 5830,
+            "value": "nscrollBehavior"
+          },
+          {
+            "offset": 5849,
+            "value": "oscrollDirection"
+          },
+          {
+            "offset": 5869,
+            "value": "prectangleBottomLeftCornerRadius"
+          },
+          {
+            "offset": 5904,
+            "value": "qrectangleBottomRightCornerRadius"
+          },
+          {
+            "offset": 5940,
+            "value": "rrectangleCornerRadiiIndependent"
+          },
+          {
+            "offset": 5975,
+            "value": "srectangleCornerToolIndependent"
+          },
+          {
+            "offset": 6009,
+            "value": "trectangleTopLeftCornerRadius"
+          },
+          {
+            "offset": 6041,
+            "value": "urectangleTopRightCornerRadius"
+          },
+          {
+            "offset": 6074,
+            "value": "vframeMaskDisabled"
+          },
+          {
+            "offset": 6095,
+            "value": "whyperlink"
+          },
+          {
+            "offset": 6108,
+            "value": "xsharedStyleMasterData"
+          },
+          {
+            "offset": 6133,
+            "value": "ysharedStyleReference"
+          },
+          {
+            "offset": 6157,
+            "value": "zautoRename"
+          },
+          {
+            "offset": 15310,
+            "value": "CREATED"
+          },
+          {
+            "offset": 16088,
+            "value": "-PROD_RADIO"
+          },
+          {
+            "offset": 16135,
+            "value": "0PROD_SEARCHBOX"
+          },
+          {
+            "offset": 16153,
+            "value": "1PROD_INPUTBOX"
+          },
+          {
+            "offset": 16170,
+            "value": "2PROD_PASSWORDINPUTBOX"
+          },
+          {
+            "offset": 16195,
+            "value": "3PROD_ICONLIST"
+          },
+          {
+            "offset": 16212,
+            "value": "4PROD_SWITCHLIST"
+          },
+          {
+            "offset": 16231,
+            "value": "5PROD_TOAST"
+          },
+          {
+            "offset": 16245,
+            "value": "6PROD_ALERT"
+          },
+          {
+            "offset": 16259,
+            "value": "7PROD_INPUTALERT"
+          },
+          {
+            "offset": 16278,
+            "value": "8PROD_BOTTONALERT"
+          },
+          {
+            "offset": 16298,
+            "value": "9PROD_CARD"
+          },
+          {
+            "offset": 16437,
+            "value": "APROD_TICKALERT"
+          },
+          {
+            "offset": 16455,
+            "value": "BPROD_INPUTRANGESEARCH"
+          },
+          {
+            "offset": 16480,
+            "value": "CPROD_INPUTDROP"
+          },
+          {
+            "offset": 16498,
+            "value": "DPROD_INPUTDATA"
+          },
+          {
+            "offset": 16516,
+            "value": "EPROD_INPUTMULROW"
+          },
+          {
+            "offset": 16536,
+            "value": "FPROD_INPUTVERIFICATION"
+          },
+          {
+            "offset": 16562,
+            "value": "GPROD_MENUOPTIONECOMPONENT"
+          },
+          {
+            "offset": 16591,
+            "value": "HPROD_SIDENAVIGATBAR"
+          },
+          {
+            "offset": 16614,
+            "value": "IPROD_DATASELECTOR"
+          },
+          {
+            "offset": 16635,
+            "value": "JPROD_PAGERCOMPONENT"
+          },
+          {
+            "offset": 16658,
+            "value": "KPROD_STEPPER"
+          },
+          {
+            "offset": 16674,
+            "value": "LPROD_MAPCOMPONENT"
+          },
+          {
+            "offset": 16695,
+            "value": "MPROD_HISTOGRAM"
+          },
+          {
+            "offset": 16713,
+            "value": "NPROD_PIECHART"
+          },
+          {
+            "offset": 16730,
+            "value": "OPROD_LINECHART"
+          },
+          {
+            "offset": 16748,
+            "value": "PPROD_ICONBUTTON"
+          },
+          {
+            "offset": 16767,
+            "value": "QPROD_MOREBUTTON"
+          },
+          {
+            "offset": 16786,
+            "value": "RPROD_SCOREBAR"
+          },
+          {
+            "offset": 16803,
+            "value": "SPROD_PROCESSBAR"
+          },
+          {
+            "offset": 16822,
+            "value": "TPROD_DRAGBAR"
+          },
+          {
+            "offset": 16838,
+            "value": "UPROD_SVGFRAME"
+          },
+          {
+            "offset": 16855,
+            "value": "VPROD_LARGECARD3"
+          },
+          {
+            "offset": 16874,
+            "value": "WPROD_LARGECARD4"
+          },
+          {
+            "offset": 16893,
+            "value": "XPROD_TOASTLOADING"
+          },
+          {
+            "offset": 16914,
+            "value": "YPROD_SIDENAVIGATBAR2"
+          },
+          {
+            "offset": 16938,
+            "value": "ZPROD_PAGERCOMPONENT2"
+          },
+          {
+            "offset": 17041,
+            "value": "_PROD_TOASTWARNPC"
+          },
+          {
+            "offset": 17083,
+            "value": "aPROD_TOASTLOADINGPC"
+          },
+          {
+            "offset": 17106,
+            "value": "bPROD_TOASTSINGLEBUTTONPC"
+          },
+          {
+            "offset": 17134,
+            "value": "cPROD_TOASTDOUBLEBUTTONPC"
+          },
+          {
+            "offset": 17162,
+            "value": "dPROD_TOASTTIPSPC"
+          },
+          {
+            "offset": 17182,
+            "value": "ePROD_PLUSNAVIGATBAR"
+          },
+          {
+            "offset": 17205,
+            "value": "fPROD_STEPPER2"
+          },
+          {
+            "offset": 17222,
+            "value": "gSECTION"
+          },
+          {
+            "offset": 17233,
+            "value": "hPROD_BREADCRUMB"
+          },
+          {
+            "offset": 17252,
+            "value": "iPROD_BREADCRUMBITEM"
+          },
+          {
+            "offset": 17275,
+            "value": "jPROD_IBUTTON"
+          },
+          {
+            "offset": 17291,
+            "value": "kPROD_IPLACEHOLDER"
+          },
+          {
+            "offset": 17312,
+            "value": "lPROD_IMASK"
+          },
+          {
+            "offset": 17326,
+            "value": "mPROD_ISTATUSBAR"
+          },
+          {
+            "offset": 17345,
+            "value": "nPROD_IINPUTBOX"
+          },
+          {
+            "offset": 17363,
+            "value": "oPROD_IRADIOANDCHECKBUTTON"
+          },
+          {
+            "offset": 17392,
+            "value": "pPROD_IRADIOBUTTON"
+          },
+          {
+            "offset": 17413,
+            "value": "qPROD_ISTEPPER"
+          },
+          {
+            "offset": 17430,
+            "value": "rPROD_VIEWPORTTEXT"
+          },
+          {
+            "offset": 17451,
+            "value": "sPROD_RECTBOX"
+          },
+          {
+            "offset": 17467,
+            "value": "tPROD_SELECTBOX"
+          },
+          {
+            "offset": 17485,
+            "value": "uPROD_SELECTOPTION"
+          },
+          {
+            "offset": 17506,
+            "value": "vPROD_SMARTTABLE"
+          },
+          {
+            "offset": 17525,
+            "value": "wPROD_SMARTTABLECELL"
+          },
+          {
+            "offset": 17548,
+            "value": "xPROD_BLOCK"
+          },
+          {
+            "offset": 17562,
+            "value": "yPROD_BLOCKDOCUMENT"
+          },
+          {
+            "offset": 17584,
+            "value": "zPROD_TOPBARPC"
+          },
+          {
+            "offset": 18711,
+            "value": "H1"
+          },
+          {
+            "offset": 23867,
+            "value": "ORDERED_LIST"
+          },
+          {
+            "offset": 23930,
+            "value": "ENDING"
+          },
+          {
+            "offset": 23960,
+            "value": "OUTLINE"
+          },
+          {
+            "offset": 24006,
+            "value": "CAP_HEIGHT"
+          },
+          {
+            "offset": 24047,
+            "value": "C2PC"
+          },
+          {
+            "offset": 24406,
+            "value": "-OPBD"
+          },
+          {
+            "offset": 24430,
+            "value": "0PKNA"
+          },
+          {
+            "offset": 24438,
+            "value": "1LTRA"
+          },
+          {
+            "offset": 24446,
+            "value": "2LTRM"
+          },
+          {
+            "offset": 24454,
+            "value": "3RTLA"
+          },
+          {
+            "offset": 24462,
+            "value": "4RTLM"
+          },
+          {
+            "offset": 24470,
+            "value": "5ABRV"
+          },
+          {
+            "offset": 24478,
+            "value": "6ABVM"
+          },
+          {
+            "offset": 24486,
+            "value": "7ABVS"
+          },
+          {
+            "offset": 24494,
+            "value": "8VALT"
+          },
+          {
+            "offset": 24502,
+            "value": "9VHAL"
+          },
+          {
+            "offset": 24566,
+            "value": "ACURS"
+          },
+          {
+            "offset": 24574,
+            "value": "BDIST"
+          },
+          {
+            "offset": 24582,
+            "value": "CEXPT"
+          },
+          {
+            "offset": 24590,
+            "value": "DFALT"
+          },
+          {
+            "offset": 24598,
+            "value": "EFINA"
+          },
+          {
+            "offset": 24606,
+            "value": "FFIN2"
+          },
+          {
+            "offset": 24614,
+            "value": "GFIN3"
+          },
+          {
+            "offset": 24622,
+            "value": "HHALF"
+          },
+          {
+            "offset": 24630,
+            "value": "IHALN"
+          },
+          {
+            "offset": 24638,
+            "value": "JHKNA"
+          },
+          {
+            "offset": 24646,
+            "value": "KHNGL"
+          },
+          {
+            "offset": 24654,
+            "value": "LHOJO"
+          },
+          {
+            "offset": 24662,
+            "value": "MINIT"
+          },
+          {
+            "offset": 24670,
+            "value": "NISOL"
+          },
+          {
+            "offset": 24678,
+            "value": "OJP78"
+          },
+          {
+            "offset": 24686,
+            "value": "PJP83"
+          },
+          {
+            "offset": 24694,
+            "value": "QJP90"
+          },
+          {
+            "offset": 24702,
+            "value": "RJP04"
+          },
+          {
+            "offset": 24710,
+            "value": "SLJMO"
+          },
+          {
+            "offset": 24718,
+            "value": "TLOCL"
+          },
+          {
+            "offset": 24726,
+            "value": "UMARK"
+          },
+          {
+            "offset": 24734,
+            "value": "VMEDI"
+          },
+          {
+            "offset": 24742,
+            "value": "WMED2"
+          },
+          {
+            "offset": 24750,
+            "value": "XMKMK"
+          },
+          {
+            "offset": 24758,
+            "value": "YNLCK"
+          },
+          {
+            "offset": 24766,
+            "value": "ZNUKT"
+          },
+          {
+            "offset": 24806,
+            "value": "_PSTS"
+          },
+          {
+            "offset": 24822,
+            "value": "aRPHF"
+          },
+          {
+            "offset": 24830,
+            "value": "bRUBY"
+          },
+          {
+            "offset": 24838,
+            "value": "cSMPL"
+          },
+          {
+            "offset": 24846,
+            "value": "dTJMO"
+          },
+          {
+            "offset": 24854,
+            "value": "eTNAM"
+          },
+          {
+            "offset": 24862,
+            "value": "fTRAD"
+          },
+          {
+            "offset": 24870,
+            "value": "gVATU"
+          },
+          {
+            "offset": 24878,
+            "value": "hVJMO"
+          },
+          {
+            "offset": 24886,
+            "value": "iVKNA"
+          },
+          {
+            "offset": 24894,
+            "value": "jVKRN"
+          },
+          {
+            "offset": 24902,
+            "value": "kVRTR"
+          },
+          {
+            "offset": 24910,
+            "value": "lVRT2"
+          },
+          {
+            "offset": 24918,
+            "value": "mSS01"
+          },
+          {
+            "offset": 24926,
+            "value": "nSS02"
+          },
+          {
+            "offset": 24934,
+            "value": "oSS03"
+          },
+          {
+            "offset": 24942,
+            "value": "pSS04"
+          },
+          {
+            "offset": 24950,
+            "value": "qSS05"
+          },
+          {
+            "offset": 24958,
+            "value": "rSS06"
+          },
+          {
+            "offset": 24966,
+            "value": "sSS07"
+          },
+          {
+            "offset": 24974,
+            "value": "tSS08"
+          },
+          {
+            "offset": 24982,
+            "value": "uSS09"
+          },
+          {
+            "offset": 24990,
+            "value": "vSS10"
+          },
+          {
+            "offset": 24998,
+            "value": "wSS11"
+          },
+          {
+            "offset": 25006,
+            "value": "xSS12"
+          },
+          {
+            "offset": 25014,
+            "value": "ySS13"
+          },
+          {
+            "offset": 25022,
+            "value": "zSS14"
+          },
+          {
+            "offset": 26018,
+            "value": "STATE_GROUP"
+          },
+          {
+            "offset": 26061,
+            "value": "TEXT"
+          },
+          {
+            "offset": 26131,
+            "value": "TEXT_DATA"
+          },
+          {
+            "offset": 26216,
+            "value": "Figma"
+          },
+          {
+            "offset": 26280,
+            "value": "ImportDoc"
+          },
+          {
+            "offset": 26315,
+            "value": "DESIGN"
+          },
+          {
+            "offset": 26354,
+            "value": "WRAP"
+          },
+          {
+            "offset": 26383,
+            "value": "SPACE_BETWEEN"
+          },
+          {
+            "offset": 26425,
+            "value": "LTR"
+          },
+          {
+            "offset": 26469,
+            "value": "FLOAT"
+          },
+          {
+            "offset": 26636,
+            "value": "FLOAT"
+          },
+          {
+            "offset": 26738,
+            "value": "CORNER_RADIUS"
+          },
+          {
+            "offset": 27441,
+            "value": "TEXT_CONTENT"
+          },
+          {
+            "offset": 27788,
+            "value": "SUBTRACTION"
+          },
+          {
+            "offset": 28061,
+            "value": "COMPONENT_PROP_ASSIGNMENTS"
+          },
+          {
+            "offset": 28119,
+            "value": "ANDROID"
+          },
+          {
+            "offset": 28171,
+            "value": "SYMMETRY"
+          },
+          {
+            "offset": 28214,
+            "value": "LINEAR"
+          },
+          {
+            "offset": 28245,
+            "value": "RELATIVE"
+          },
+          {
+            "offset": 28282,
+            "value": "REVERSE"
+          },
+          {
+            "offset": 28326,
+            "value": "STROKE"
+          },
+          {
+            "offset": 28871,
+            "value": "ACCESSIBILITY"
+          },
+          {
+            "offset": 28964,
+            "value": "PROGRESSIVE"
+          }
+        ],
+        "encodingScans": {
+          "varintCandidates": 29240,
+          "zigzagSmallIntegerCandidates": 29240,
+          "lengthPrefixedStringCandidates": 834,
+          "float32LECandidates": 5272,
+          "float32BECandidates": 5269,
+          "float64LECandidates": 578,
+          "float64BECandidates": 578
+        }
+      },
+      "compressionSignals": [
+        {
+          "source": "redacted-entry",
+          "format": "zstd",
+          "offset": 24,
+          "confidence": "high"
+        }
+      ],
+      "serializationSignals": [
+        {
+          "format": "Kiwi binary schema",
+          "confidence": "confirmed",
+          "evidence": "224 definitions decoded; PixsoMsg/PixsoNode schema present."
+        },
+        {
+          "format": "Kiwi PixsoMsg payload",
+          "confidence": "confirmed",
+          "evidence": "decode/re-encode is byte-for-byte identical."
+        },
+        {
+          "format": "Protobuf wire scan",
+          "confidence": "not-found",
+          "evidence": "3 valid leading fields, 0% coverage; no Protobuf magic exists."
+        },
+        {
+          "format": "MessagePack/CBOR",
+          "confidence": "not-found",
+          "evidence": "No complete top-level collection signature; first bytes are consumed by confirmed Kiwi schema decoding."
+        },
+        {
+          "format": "BSON",
+          "confidence": "not-found",
+          "evidence": "BSON length and terminator heuristic did not match."
+        },
+        {
+          "format": "FlatBuffers",
+          "confidence": "not-found",
+          "evidence": "No plausible four-byte file identifier."
+        }
+      ],
+      "decoded": {
+        "rootMessage": "PixsoMsg",
+        "roundTripExact": true,
+        "schemaDefinitionCount": 224,
+        "payloadBytes": 35813246,
+        "nodeCount": 191738,
+        "locatedRecordBoundaryCount": 191738,
+        "nodeTypeCounts": {
+          "INSTANCE": 663,
+          "RECTANGLE": 7331,
+          "TEXT": 10846,
+          "FRAME": 1319,
+          "SYMBOL": 307,
+          "VECTOR": 110816,
+          "ELLIPSE": 869,
+          "GROUP": 7448,
+          "BOOLEAN_OPERATION": 52080,
+          "REGULAR_POLYGON": 5,
+          "CANVAS": 5,
+          "LINE": 47,
+          "VARIABLE": 1,
+          "VARIABLE_SET": 1
+        },
+        "geometryCandidates": {
+          "sizeFieldNodes": 191430,
+          "transformFieldNodes": 191391,
+          "xYStatus": "not-found",
+          "coordinateModel": "unknown"
+        },
+        "attributeCandidates": {
+          "layoutModeNodes": 1181,
+          "paddingNodes": 1267,
+          "gapNodes": 1267,
+          "strokeNodes": 11106
+        }
+      }
+    }
+  ],
+  "schemaDiffs": [
+    {
+      "left": "sample-001",
+      "right": "sample-002",
+      "commonPrefixBytes": 0,
+      "commonSuffixBytes": 6227,
+      "changedRanges": [
+        {
+          "offset": 0,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "f2",
+          "rightHex": "e0"
+        },
+        {
+          "offset": 9,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "1b",
+          "rightHex": "15"
+        },
+        {
+          "offset": 15,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "fe",
+          "rightHex": "de"
+        },
+        {
+          "offset": 25,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "de",
+          "rightHex": "ba"
+        },
+        {
+          "offset": 61,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "96",
+          "rightHex": "82"
+        },
+        {
+          "offset": 84,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "da",
+          "rightHex": "b6"
+        },
+        {
+          "offset": 165,
+          "leftLength": 2,
+          "rightLength": 2,
+          "leftHex": "8003",
+          "rightHex": "e002"
+        },
+        {
+          "offset": 287,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "ca",
+          "rightHex": "b8"
+        },
+        {
+          "offset": 300,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "d6",
+          "rightHex": "c4"
+        },
+        {
+          "offset": 304,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "70",
+          "rightHex": "50"
+        },
+        {
+          "offset": 306,
+          "leftLength": 19,
+          "rightLength": 19,
+          "leftHex": "747465726e53706163696e6700d80300167061",
+          "rightHex": "696e7446696c7465724d657373616765000208"
+        },
+        {
+          "offset": 326,
+          "leftLength": 143,
+          "rightLength": 143,
+          "leftHex": "7465726e54696c655479706500fc020017766572746963616c416c69676e6d65",
+          "rightHex": "696e7400090001736861646f777300090002686967686c696768747300090003"
+        },
+        {
+          "offset": 471,
+          "leftLength": 8,
+          "rightLength": 8,
+          "leftHex": "6578706f73757265",
+          "rightHex": "01016e616d65000b"
+        },
+        {
+          "offset": 480,
+          "leftLength": 3,
+          "rightLength": 3,
+          "leftHex": "090004",
+          "rightHex": "026461"
+        },
+        {
+          "offset": 484,
+          "leftLength": 16,
+          "rightLength": 16,
+          "leftHex": "656d7065726174757265000900057669",
+          "rightHex": "61426c6f620005000350617468000203"
+        },
+        {
+          "offset": 501,
+          "leftLength": 26,
+          "rightLength": 26,
+          "leftHex": "72616e636500090006636f6e7472617374000900076875650009",
+          "rightHex": "6c6f62496e6465780005000177696e64696e6752756c6500ea02"
+        },
+        {
+          "offset": 528,
+          "leftLength": 18,
+          "rightLength": 18,
+          "leftHex": "08436f6c6f7253746f70000202636f6c6f72",
+          "rightHex": "027078546167000500034755494450617468"
+        },
+        {
+          "offset": 547,
+          "leftLength": 6,
+          "rightLength": 6,
+          "leftHex": "de030001706f",
+          "rightHex": "020167756964"
+        },
+        {
+          "offset": 554,
+          "leftLength": 43,
+          "rightLength": 43,
+          "leftHex": "6974696f6e00090002496d6167654d6573736167650002036861736800030101",
+          "rightHex": "00b2030101566563746f7244617461000203766563746f724e6574776f726b42"
+        },
+        {
+          "offset": 598,
+          "leftLength": 12,
+          "rightLength": 12,
+          "leftHex": "426c6f620005000350617468",
+          "rightHex": "6c697a656453697a6500b403"
+        },
+        {
+          "offset": 612,
+          "leftLength": 47,
+          "rightLength": 47,
+          "leftHex": "03626c6f62496e6465780005000177696e64696e6752756c65008e0300027078",
+          "rightHex": "7374796c654f766572726964655461626c65007e010341726344617461000203"
+        },
+        {
+          "offset": 660,
+          "leftLength": 4,
+          "rightLength": 4,
+          "leftHex": "02016775",
+          "rightHex": "01656e64"
+        },
+        {
+          "offset": 665,
+          "leftLength": 39,
+          "rightLength": 39,
+          "leftHex": "647300d6030101566563746f7244617461000203766563746f724e6574776f72",
+          "rightHex": "6e67416e676c6500090002696e6e657252616469757300090003456666656374"
+        },
+        {
+          "offset": 705,
+          "leftLength": 6,
+          "rightLength": 6,
+          "leftHex": "016e6f726d61",
+          "rightHex": "84020001636f"
+        },
+        {
+          "offset": 712,
+          "leftLength": 59,
+          "rightLength": 59,
+          "leftHex": "697a656453697a6500d80300027374796c654f766572726964655461626c6500",
+          "rightHex": "6f7200ba0300026f666673657400b40300037261646975730009000476697369"
+        },
+        {
+          "offset": 774,
+          "leftLength": 33,
+          "rightLength": 33,
+          "leftHex": "01656e64696e67416e676c6500090002696e6e65725261646975730009000350",
+          "rightHex": "0773686f77536861646f77426568696e644e6f64650001000873617475726174"
+        },
+        {
+          "offset": 808,
+          "leftLength": 22,
+          "rightLength": 22,
+          "leftHex": "6772657373426c757253746f70000202706f73697469",
+          "rightHex": "6e0009000972616469757356617200b801000a636f6c"
+        },
+        {
+          "offset": 831,
+          "leftLength": 21,
+          "rightLength": 21,
+          "leftHex": "6e0009000172616469757300090002456666656374",
+          "rightHex": "7256617200b801000b73707265616456617200b801"
+        },
+        {
+          "offset": 853,
+          "leftLength": 73,
+          "rightLength": 73,
+          "leftHex": "022774797065009a020001636f6c6f7200de0300026f666673657400d8030003",
+          "rightHex": "0c7856617200b801000d7956617200b801000e72656672616374696f6e526164"
+        },
+        {
+          "offset": 929,
+          "leftLength": 2,
+          "rightLength": 2,
+          "leftHex": "0773",
+          "rightHex": "1163"
+        },
+        {
+          "offset": 932,
+          "leftLength": 9,
+          "rightLength": 9,
+          "leftHex": "6f77536861646f7742",
+          "rightHex": "726f6d617469634162"
+        },
+        {
+          "offset": 942,
+          "leftLength": 5,
+          "rightLength": 5,
+          "leftHex": "68696e644e",
+          "rightHex": "7272617469"
+        },
+        {
+          "offset": 948,
+          "leftLength": 56,
+          "rightLength": 56,
+          "leftHex": "64650001000873617475726174696f6e0009000972616469757356617200ca01",
+          "rightHex": "6e0009001272656672616374696f6e496e74656e736974790009001362726967"
+        },
+        {
+          "offset": 1005,
+          "leftLength": 11,
+          "rightLength": 11,
+          "leftHex": "ca01000c7856617200ca01",
+          "rightHex": "15626c75724f7054797065"
+        },
+        {
+          "offset": 1017,
+          "leftLength": 21,
+          "rightLength": 21,
+          "leftHex": "0d7956617200ca01000e72656672616374696f6e52",
+          "rightHex": "b00300167374617274526164697573000900177472"
+        },
+        {
+          "offset": 1039,
+          "leftLength": 6,
+          "rightLength": 6,
+          "leftHex": "646975730009",
+          "rightHex": "6e73666f726d"
+        },
+        {
+          "offset": 1046,
+          "leftLength": 24,
+          "rightLength": 24,
+          "leftHex": "0f73706563756c6172416e676c650009001073706563756c",
+          "rightHex": "b6030018626576656c53697a650009001953796d626f6c44"
+        },
+        {
+          "offset": 1071,
+          "leftLength": 27,
+          "rightLength": 27,
+          "leftHex": "72496e74656e73697479000900116368726f6d6174696341626572",
+          "rightHex": "746100020373796d626f6c494400b203000173796d626f6c4f7665"
+        },
+        {
+          "offset": 1099,
+          "leftLength": 5,
+          "rightLength": 5,
+          "leftHex": "6174696f6e",
+          "rightHex": "7269646573"
+        },
+        {
+          "offset": 1105,
+          "leftLength": 54,
+          "rightLength": 54,
+          "leftHex": "09001272656672616374696f6e496e74656e7369747900090013627269676874",
+          "rightHex": "460102756e69666f726d5363616c65466163746f72000900034c61796f757447"
+        },
+        {
+          "offset": 1160,
+          "leftLength": 114,
+          "rightLength": 114,
+          "leftHex": "15626c75724f705479706500d403001673746172745261646975730009001774",
+          "rightHex": "0276697369626c65000100036e756d53656374696f6e73000500046f66667365"
+        },
+        {
+          "offset": 1276,
+          "leftLength": 13,
+          "rightLength": 13,
+          "leftHex": "79436f6c6f7200de03001e636c",
+          "rightHex": "00b801000b73656374696f6e53"
+        },
+        {
+          "offset": 1290,
+          "leftLength": 8,
+          "rightLength": 8,
+          "leftHex": "70546f5368617065",
+          "rightHex": "7a6556617200b801"
+        },
+        {
+          "offset": 1299,
+          "leftLength": 5,
+          "rightLength": 5,
+          "leftHex": "01001f7365",
+          "rightHex": "0c67757474"
+        },
+        {
+          "offset": 1305,
+          "leftLength": 60,
+          "rightLength": 60,
+          "leftHex": "64000500206973496d706163740001002173616d706c696e6752616e67650009",
+          "rightHex": "7253697a6556617200b801000d47726964547261636b53697a696e6700020369"
+        },
+        {
+          "offset": 1366,
+          "leftLength": 8,
+          "rightLength": 8,
+          "leftHex": "00d80300256d6f74",
+          "rightHex": "74436f6e73747261"
+        },
+        {
+          "offset": 1375,
+          "leftLength": 9,
+          "rightLength": 9,
+          "leftHex": "6f6e416e676c650009",
+          "rightHex": "6e7400020274797065"
+        },
+        {
+          "offset": 1385,
+          "leftLength": 15,
+          "rightLength": 15,
+          "leftHex": "2670726f677265737369766553746f",
+          "rightHex": "a402000176616c7565000900024578"
+        },
+        {
+          "offset": 1401,
+          "leftLength": 163,
+          "rightLength": 163,
+          "leftHex": "730010012753796d626f6c4461746100020373796d626f6c494400d603000173",
+          "rightHex": "6f727453657474696e6773000208737566666978000b0001696d616765547970"
+        },
+        {
+          "offset": 1566,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "09",
+          "rightHex": "0b"
+        },
+        {
+          "offset": 1568,
+          "leftLength": 2,
+          "rightLength": 2,
+          "leftHex": "0763",
+          "rightHex": "0270"
+        },
+        {
+          "offset": 1571,
+          "leftLength": 36,
+          "rightLength": 36,
+          "leftHex": "6c6f7200de0300087061747465726e00b20200096e756d53656374696f6e7356",
+          "rightHex": "7374736372697074000b00035465787444617461000211636861726163746572"
+        },
+        {
+          "offset": 1608,
+          "leftLength": 16,
+          "rightLength": 16,
+          "leftHex": "000a6f666673657456617200ca01000b",
+          "rightHex": "6368617261637465725374796c654944"
+        },
+        {
+          "offset": 1625,
+          "leftLength": 12,
+          "rightLength": 12,
+          "leftHex": "656374696f6e53697a655661",
+          "rightHex": "000501027374796c654f7665"
+        },
+        {
+          "offset": 1638,
+          "leftLength": 38,
+          "rightLength": 38,
+          "leftHex": "00ca01000c67757474657253697a6556617200ca01000d47726964547261636b",
+          "rightHex": "726964655461626c6500800101036c61796f757453697a6500b4030004626173"
+        },
+        {
+          "offset": 1677,
+          "leftLength": 43,
+          "rightLength": 43,
+          "leftHex": "0203696400d60300017479706500b602000276616c7565000900034578706f72",
+          "rightHex": "2a0105676c79706873002601066465636f726174696f6e73002401076c61796f"
+        },
+        {
+          "offset": 1721,
+          "leftLength": 12,
+          "rightLength": 12,
+          "leftHex": "02027479706500ba02000176",
+          "rightHex": "08666f6e744d657461446174"
+        },
+        {
+          "offset": 1734,
+          "leftLength": 15,
+          "rightLength": 15,
+          "leftHex": "6c7565000900024578706f72745365",
+          "rightHex": "0022010966616c6c6261636b466f6e"
+        },
+        {
+          "offset": 1750,
+          "leftLength": 88,
+          "rightLength": 88,
+          "leftHex": "74696e6773000208737566666978000b0001696d6167655479706500b8020002",
+          "rightHex": "73001c010a68797065726c696e6b426f7865730020010b706172616772617068"
+        },
+        {
+          "offset": 1839,
+          "leftLength": 7,
+          "rightLength": 7,
+          "leftHex": "00010006636f6e",
+          "rightHex": "65644865696768"
+        },
+        {
+          "offset": 1847,
+          "leftLength": 37,
+          "rightLength": 37,
+          "leftHex": "656e74734f6e6c7900010007737667466f7263655374726f6b654d61736b7300",
+          "rightHex": "0009000f676c797068506f73657300a601011069734469727479000100114879"
+        },
+        {
+          "offset": 1885,
+          "leftLength": 16,
+          "rightLength": 16,
+          "leftHex": "744e616d6500020366616d696c79000b",
+          "rightHex": "6b426f78000204626f756e647300bc03"
+        },
+        {
+          "offset": 1903,
+          "leftLength": 5,
+          "rightLength": 5,
+          "leftHex": "7374796c65",
+          "rightHex": "75726c000b"
+        },
+        {
+          "offset": 1909,
+          "leftLength": 32,
+          "rightLength": 32,
+          "leftHex": "0b0002706f7374736372697074000b0003546578744461746100021163686172",
+          "rightHex": "026775696400b203000368797065726c696e6b494400050004466f6e744d6574"
+        },
+        {
+          "offset": 1942,
+          "leftLength": 53,
+          "rightLength": 53,
+          "leftHex": "6374657273000b00016368617261637465725374796c65494473000501027374",
+          "rightHex": "446174610002056b6579001c0001666f6e744c696e6548656967687400090002"
+        },
+        {
+          "offset": 1996,
+          "leftLength": 21,
+          "rightLength": 21,
+          "leftHex": "61796f757453697a6500d8030004626173656c696e",
+          "rightHex": "6500ba020004666f6e745765696768740005000544"
+        },
+        {
+          "offset": 2018,
+          "leftLength": 57,
+          "rightLength": 57,
+          "leftHex": "73002c0105676c79706873002801066465636f726174696f6e73002601076c61",
+          "rightHex": "636f726174696f6e000202726563747300bc0301017374796c65494400050002"
+        },
+        {
+          "offset": 2076,
+          "leftLength": 91,
+          "rightLength": 91,
+          "leftHex": "610024010966616c6c6261636b466f6e7473001e010a68797065726c696e6b42",
+          "rightHex": "696f6e00b40300027374796c65494400050003666f6e7453697a650009000466"
+        },
+        {
+          "offset": 2170,
+          "leftLength": 19,
+          "rightLength": 19,
+          "leftHex": "780005000e7472756e63617465644865696768",
+          "rightHex": "6e746174696f6e4c6576656c000700026c6973"
+        },
+        {
+          "offset": 2190,
+          "leftLength": 20,
+          "rightLength": 20,
+          "leftHex": "0009000f676c797068506f73657300b801011069",
+          "rightHex": "53746172744f6666736574000700036973466972"
+        },
+        {
+          "offset": 2211,
+          "leftLength": 38,
+          "rightLength": 38,
+          "leftHex": "44697274790001001148797065726c696e6b426f78000204626f756e647300e0",
+          "rightHex": "744c696e654f664c69737400010004736f75726365446972656374696f6e616c"
+        },
+        {
+          "offset": 2250,
+          "leftLength": 39,
+          "rightLength": 39,
+          "leftHex": "0b00026775696400d603000368797065726c696e6b494400050004466f6e744d",
+          "rightHex": "05646972656374696f6e616c6974790094030006426173656c696e6500020770"
+        },
+        {
+          "offset": 2290,
+          "leftLength": 14,
+          "rightLength": 14,
+          "leftHex": "02056b6579001e0001666f6e744c",
+          "rightHex": "b40300017769647468000900026c"
+        },
+        {
+          "offset": 2307,
+          "leftLength": 105,
+          "rightLength": 105,
+          "leftHex": "48656967687400090002666f6e7444696765737400030103666f6e745374796c",
+          "rightHex": "59000900036c696e65486569676874000900046c696e65417363656e74000900"
+        },
+        {
+          "offset": 2413,
+          "leftLength": 18,
+          "rightLength": 18,
+          "leftHex": "01706f736974696f6e00d80300027374796c",
+          "rightHex": "c002000250726f746f747970654465766963"
+        },
+        {
+          "offset": 2432,
+          "leftLength": 16,
+          "rightLength": 16,
+          "leftHex": "494400050003666f6e7453697a650009",
+          "rightHex": "0002047479706500c802000173697a65"
+        },
+        {
+          "offset": 2449,
+          "leftLength": 40,
+          "rightLength": 40,
+          "leftHex": "04666972737443686172616374657200050005616476616e6365000900065061",
+          "rightHex": "b40300027072657365744964656e746966696572000b0003726f746174696f6e"
+        },
+        {
+          "offset": 2490,
+          "leftLength": 19,
+          "rightLength": 19,
+          "leftHex": "796c650002066c69737454797065009e030001",
+          "rightHex": "6f74797065496e746572616374696f6e000204"
+        },
+        {
+          "offset": 2510,
+          "leftLength": 9,
+          "rightLength": 9,
+          "leftHex": "6e64656e746174696f",
+          "rightHex": "6400b2030001657665"
+        },
+        {
+          "offset": 2520,
+          "leftLength": 11,
+          "rightLength": 11,
+          "leftHex": "4c6576656c000700026c69",
+          "rightHex": "7400360002616374696f6e"
+        },
+        {
+          "offset": 2532,
+          "leftLength": 22,
+          "rightLength": 22,
+          "leftHex": "7453746172744f666673657400070003697346697273",
+          "rightHex": "00340103697344656c6574656400010004436f6e6469"
+        },
+        {
+          "offset": 2555,
+          "leftLength": 2,
+          "rightLength": 2,
+          "leftHex": "4c69",
+          "rightHex": "696f"
+        },
+        {
+          "offset": 2558,
+          "leftLength": 9,
+          "rightLength": 9,
+          "leftHex": "654f664c6973740001",
+          "rightHex": "616c416374696f6e73"
+        },
+        {
+          "offset": 2568,
+          "leftLength": 14,
+          "rightLength": 14,
+          "leftHex": "04736f7572636544697265637469",
+          "rightHex": "0202616374696f6e730034010163"
+        },
+        {
+          "offset": 2584,
+          "leftLength": 12,
+          "rightLength": 12,
+          "leftHex": "616c69747900b80300056469",
+          "rightHex": "646974696f6e00b801000250"
+        },
+        {
+          "offset": 2597,
+          "leftLength": 9,
+          "rightLength": 9,
+          "leftHex": "656374696f6e616c69",
+          "rightHex": "6f746f747970654163"
+        },
+        {
+          "offset": 2607,
+          "leftLength": 11,
+          "rightLength": 11,
+          "leftHex": "7900b8030006426173656c",
+          "rightHex": "696f6e00021a7472616e73"
+        },
+        {
+          "offset": 2619,
+          "leftLength": 13,
+          "rightLength": 13,
+          "leftHex": "6e65000207706f736974696f6e",
+          "rightHex": "74696f6e4e6f6465494400b203"
+        },
+        {
+          "offset": 2633,
+          "leftLength": 7,
+          "rightLength": 7,
+          "leftHex": "d8030001776964",
+          "rightHex": "017472616e7369"
+        },
+        {
+          "offset": 2641,
+          "leftLength": 10,
+          "rightLength": 10,
+          "leftHex": "68000900026c696e6559",
+          "rightHex": "696f6e5479706500ce02"
+        },
+        {
+          "offset": 2652,
+          "leftLength": 39,
+          "rightLength": 39,
+          "leftHex": "0900036c696e65486569676874000900046c696e65417363656e740009000566",
+          "rightHex": "027472616e736974696f6e4475726174696f6e00090003656173696e67547970"
+        },
+        {
+          "offset": 2693,
+          "leftLength": 15,
+          "rightLength": 15,
+          "leftHex": "6374657200050006656e6443686172",
+          "rightHex": "6e736974696f6e53686f756c64536d"
+        },
+        {
+          "offset": 2709,
+          "leftLength": 1,
+          "rightLength": 1,
+          "leftHex": "63",
+          "rightHex": "72"
+        },
+        {
+          "offset": 2711,
+          "leftLength": 50,
+          "rightLength": 50,
+          "leftHex": "6572000500074b6579547269676765720002026b6579436f6465730005010174",
+          "rightHex": "416e696d61746500010005636f6e6e656374696f6e5479706500c4020006636f"
+        },
+        {
+          "offset": 2762,
+          "leftLength": 9,
+          "rightLength": 9,
+          "leftHex": "6f746f747970654465",
+          "rightHex": "6c617952656c617469"
+        },
+        {
+          "offset": 2772,
+          "leftLength": 44,
+          "rightLength": 44,
+          "leftHex": "6963650002047479706500e202000173697a6500d80300027072657365744964",
+          "rightHex": "65506f736974696f6e00b40300086e617669676174696f6e5479706500d80200"
+        },
+        {
+          "offset": 2817,
+          "leftLength": 49,
+          "rightLength": 49,
+          "leftHex": "6f746174696f6e00e602000450726f746f74797065496e746572616374696f6e",
+          "rightHex": "6573657276655363726f6c6c0001000a656173696e6746756e6374696f6e0009"
+        },
+        {
+          "offset": 2867,
+          "leftLength": 3,
+          "rightLength": 3,
+          "leftHex": "026163",
+          "rightHex": "0c6578"
+        },
+        {
+          "offset": 2871,
+          "leftLength": 17,
+          "rightLength": 17,
+          "leftHex": "696f6e73003e0103697344656c65746564",
+          "rightHex": "72615363726f6c6c4f666673657400b403"
+        },
+        {
+          "offset": 2889,
+          "leftLength": 38,
+          "rightLength": 38,
+          "leftHex": "010004436f6e646974696f6e616c416374696f6e73000202616374696f6e7300",
+          "rightHex": "0d73686f774869646500ca02000e61646a75737453697a65004e000f6d6f7669"
+        }
+      ],
+      "schemaStringOffsetChanges": [
+        {
+          "value": "0miterLimit",
+          "leftOffset": 5405,
+          "rightOffset": 4479,
+          "delta": -926
+        },
+        {
+          "value": "1backgroundColor",
+          "leftOffset": 5419,
+          "rightOffset": 4493,
+          "delta": -926
+        },
+        {
+          "value": "2backgroundEnabled",
+          "leftOffset": 5439,
+          "rightOffset": 4513,
+          "delta": -926
+        },
+        {
+          "value": "3backgroundOpacity",
+          "leftOffset": 5460,
+          "rightOffset": 4534,
+          "delta": -926
+        },
+        {
+          "value": "4backgroundPaints",
+          "leftOffset": 5481,
+          "rightOffset": 4555,
+          "delta": -926
+        },
+        {
+          "value": "6exportContentsOnly",
+          "leftOffset": 5529,
+          "rightOffset": 4603,
+          "delta": -926
+        },
+        {
+          "value": "7exportSettings",
+          "leftOffset": 5551,
+          "rightOffset": 4625,
+          "delta": -926
+        },
+        {
+          "value": "9fontName",
+          "leftOffset": 5592,
+          "rightOffset": 4666,
+          "delta": -926
+        },
+        {
+          "value": "AtextCase",
+          "leftOffset": 5735,
+          "rightOffset": 4809,
+          "delta": -926
+        },
+        {
+          "value": "BtextData",
+          "leftOffset": 5748,
+          "rightOffset": 4822,
+          "delta": -926
+        },
+        {
+          "value": "CtextDecoration",
+          "leftOffset": 5760,
+          "rightOffset": 4834,
+          "delta": -926
+        },
+        {
+          "value": "DtextTracking",
+          "leftOffset": 5779,
+          "rightOffset": 4853,
+          "delta": -926
+        },
+        {
+          "value": "EtextUserLayoutVersion",
+          "leftOffset": 5795,
+          "rightOffset": 4869,
+          "delta": -926
+        },
+        {
+          "value": "FletterSpacing",
+          "leftOffset": 5820,
+          "rightOffset": 4894,
+          "delta": -926
+        },
+        {
+          "value": "GlineHeight",
+          "leftOffset": 5837,
+          "rightOffset": 4911,
+          "delta": -926
+        },
+        {
+          "value": "HhorizontalConstraint",
+          "leftOffset": 5851,
+          "rightOffset": 4925,
+          "delta": -926
+        },
+        {
+          "value": "IverticalConstraint",
+          "leftOffset": 5876,
+          "rightOffset": 4950,
+          "delta": -926
+        },
+        {
+          "value": "JderivedSymbolData",
+          "leftOffset": 5899,
+          "rightOffset": 4973,
+          "delta": -926
+        },
+        {
+          "value": "LcomponentKey",
+          "leftOffset": 5954,
+          "rightOffset": 5028,
+          "delta": -926
+        },
+        {
+          "value": "MinheritEffectStyleID",
+          "leftOffset": 5970,
+          "rightOffset": 5044,
+          "delta": -926
+        },
+        {
+          "value": "NinheritExportStyleID",
+          "leftOffset": 5995,
+          "rightOffset": 5069,
+          "delta": -926
+        },
+        {
+          "value": "OinheritFillStyleID",
+          "leftOffset": 6020,
+          "rightOffset": 5094,
+          "delta": -926
+        },
+        {
+          "value": "PinheritFillStyleIDForBackground",
+          "leftOffset": 6043,
+          "rightOffset": 5117,
+          "delta": -926
+        },
+        {
+          "value": "QinheritFillStyleIDForStroke",
+          "leftOffset": 6079,
+          "rightOffset": 5153,
+          "delta": -926
+        },
+        {
+          "value": "RinheritGridStyleID",
+          "leftOffset": 6111,
+          "rightOffset": 5185,
+          "delta": -926
+        },
+        {
+          "value": "SinheritStrokeStyleID",
+          "leftOffset": 6134,
+          "rightOffset": 5208,
+          "delta": -926
+        },
+        {
+          "value": "TinheritTextStyleID",
+          "leftOffset": 6159,
+          "rightOffset": 5233,
+          "delta": -926
+        },
+        {
+          "value": "UinteractionDuration",
+          "leftOffset": 6182,
+          "rightOffset": 5256,
+          "delta": -926
+        },
+        {
+          "value": "VinteractionMaintained",
+          "leftOffset": 6205,
+          "rightOffset": 5279,
+          "delta": -926
+        },
+        {
+          "value": "WoverriddenSymbolID",
+          "leftOffset": 6230,
+          "rightOffset": 5304,
+          "delta": -926
+        },
+        {
+          "value": "XoverrideKey",
+          "leftOffset": 6253,
+          "rightOffset": 5327,
+          "delta": -926
+        },
+        {
+          "value": "YkeyTrigger",
+          "leftOffset": 6269,
+          "rightOffset": 5343,
+          "delta": -926
+        },
+        {
+          "value": "ZnavigationType",
+          "leftOffset": 6283,
+          "rightOffset": 5357,
+          "delta": -926
+        },
+        {
+          "value": "_proportionsConstrained",
+          "leftOffset": 6373,
+          "rightOffset": 5447,
+          "delta": -926
+        },
+        {
+          "value": "aprototypeDevice",
+          "leftOffset": 6428,
+          "rightOffset": 5502,
+          "delta": -926
+        },
+        {
+          "value": "bprototypeInteractions",
+          "leftOffset": 6447,
+          "rightOffset": 5521,
+          "delta": -926
+        },
+        {
+          "value": "doverlayBackgroundAppearance",
+          "leftOffset": 6497,
+          "rightOffset": 5571,
+          "delta": -926
+        },
+        {
+          "value": "eoverlayBackgroundInteraction",
+          "leftOffset": 6528,
+          "rightOffset": 5602,
+          "delta": -926
+        },
+        {
+          "value": "foverlayPositionType",
+          "leftOffset": 6561,
+          "rightOffset": 5635,
+          "delta": -926
+        },
+        {
+          "value": "goverlayRelativePosition",
+          "leftOffset": 6585,
+          "rightOffset": 5659,
+          "delta": -926
+        },
+        {
+          "value": "htransitionDuration",
+          "leftOffset": 6613,
+          "rightOffset": 5687,
+          "delta": -926
+        },
+        {
+          "value": "itransitionNodeID",
+          "leftOffset": 6635,
+          "rightOffset": 5709,
+          "delta": -926
+        },
+        {
+          "value": "jtransitionPreserveScroll",
+          "leftOffset": 6656,
+          "rightOffset": 5730,
+          "delta": -926
+        },
+        {
+          "value": "ktransitionShouldSmartAnimate",
+          "leftOffset": 6684,
+          "rightOffset": 5758,
+          "delta": -926
+        },
+        {
+          "value": "ltransitionTimeout",
+          "leftOffset": 6716,
+          "rightOffset": 5790,
+          "delta": -926
+        },
+        {
+          "value": "mtransitionType",
+          "leftOffset": 6737,
+          "rightOffset": 5811,
+          "delta": -926
+        },
+        {
+          "value": "nscrollBehavior",
+          "leftOffset": 6756,
+          "rightOffset": 5830,
+          "delta": -926
+        },
+        {
+          "value": "oscrollDirection",
+          "leftOffset": 6775,
+          "rightOffset": 5849,
+          "delta": -926
+        },
+        {
+          "value": "prectangleBottomLeftCornerRadius",
+          "leftOffset": 6795,
+          "rightOffset": 5869,
+          "delta": -926
+        },
+        {
+          "value": "qrectangleBottomRightCornerRadius",
+          "leftOffset": 6830,
+          "rightOffset": 5904,
+          "delta": -926
+        },
+        {
+          "value": "rrectangleCornerRadiiIndependent",
+          "leftOffset": 6866,
+          "rightOffset": 5940,
+          "delta": -926
+        },
+        {
+          "value": "srectangleCornerToolIndependent",
+          "leftOffset": 6901,
+          "rightOffset": 5975,
+          "delta": -926
+        },
+        {
+          "value": "trectangleTopLeftCornerRadius",
+          "leftOffset": 6935,
+          "rightOffset": 6009,
+          "delta": -926
+        },
+        {
+          "value": "urectangleTopRightCornerRadius",
+          "leftOffset": 6967,
+          "rightOffset": 6041,
+          "delta": -926
+        },
+        {
+          "value": "vframeMaskDisabled",
+          "leftOffset": 7000,
+          "rightOffset": 6074,
+          "delta": -926
+        },
+        {
+          "value": "whyperlink",
+          "leftOffset": 7021,
+          "rightOffset": 6095,
+          "delta": -926
+        },
+        {
+          "value": "xsharedStyleMasterData",
+          "leftOffset": 7035,
+          "rightOffset": 6108,
+          "delta": -927
+        },
+        {
+          "value": "ysharedStyleReference",
+          "leftOffset": 7061,
+          "rightOffset": 6133,
+          "delta": -928
+        },
+        {
+          "value": "zautoRename",
+          "leftOffset": 7086,
+          "rightOffset": 6157,
+          "delta": -929
+        },
+        {
+          "value": "CREATED",
+          "leftOffset": 17203,
+          "rightOffset": 15310,
+          "delta": -1893
+        },
+        {
+          "value": "-PROD_RADIO",
+          "leftOffset": 17981,
+          "rightOffset": 16088,
+          "delta": -1893
+        },
+        {
+          "value": "0PROD_SEARCHBOX",
+          "leftOffset": 18028,
+          "rightOffset": 16135,
+          "delta": -1893
+        },
+        {
+          "value": "1PROD_INPUTBOX",
+          "leftOffset": 18046,
+          "rightOffset": 16153,
+          "delta": -1893
+        },
+        {
+          "value": "2PROD_PASSWORDINPUTBOX",
+          "leftOffset": 18063,
+          "rightOffset": 16170,
+          "delta": -1893
+        },
+        {
+          "value": "3PROD_ICONLIST",
+          "leftOffset": 18088,
+          "rightOffset": 16195,
+          "delta": -1893
+        },
+        {
+          "value": "4PROD_SWITCHLIST",
+          "leftOffset": 18105,
+          "rightOffset": 16212,
+          "delta": -1893
+        },
+        {
+          "value": "5PROD_TOAST",
+          "leftOffset": 18124,
+          "rightOffset": 16231,
+          "delta": -1893
+        },
+        {
+          "value": "6PROD_ALERT",
+          "leftOffset": 18138,
+          "rightOffset": 16245,
+          "delta": -1893
+        },
+        {
+          "value": "7PROD_INPUTALERT",
+          "leftOffset": 18152,
+          "rightOffset": 16259,
+          "delta": -1893
+        },
+        {
+          "value": "8PROD_BOTTONALERT",
+          "leftOffset": 18171,
+          "rightOffset": 16278,
+          "delta": -1893
+        },
+        {
+          "value": "9PROD_CARD",
+          "leftOffset": 18191,
+          "rightOffset": 16298,
+          "delta": -1893
+        },
+        {
+          "value": "APROD_TICKALERT",
+          "leftOffset": 18330,
+          "rightOffset": 16437,
+          "delta": -1893
+        },
+        {
+          "value": "BPROD_INPUTRANGESEARCH",
+          "leftOffset": 18348,
+          "rightOffset": 16455,
+          "delta": -1893
+        },
+        {
+          "value": "CPROD_INPUTDROP",
+          "leftOffset": 18373,
+          "rightOffset": 16480,
+          "delta": -1893
+        },
+        {
+          "value": "DPROD_INPUTDATA",
+          "leftOffset": 18391,
+          "rightOffset": 16498,
+          "delta": -1893
+        },
+        {
+          "value": "EPROD_INPUTMULROW",
+          "leftOffset": 18409,
+          "rightOffset": 16516,
+          "delta": -1893
+        },
+        {
+          "value": "FPROD_INPUTVERIFICATION",
+          "leftOffset": 18429,
+          "rightOffset": 16536,
+          "delta": -1893
+        },
+        {
+          "value": "GPROD_MENUOPTIONECOMPONENT",
+          "leftOffset": 18455,
+          "rightOffset": 16562,
+          "delta": -1893
+        },
+        {
+          "value": "HPROD_SIDENAVIGATBAR",
+          "leftOffset": 18484,
+          "rightOffset": 16591,
+          "delta": -1893
+        },
+        {
+          "value": "IPROD_DATASELECTOR",
+          "leftOffset": 18507,
+          "rightOffset": 16614,
+          "delta": -1893
+        },
+        {
+          "value": "JPROD_PAGERCOMPONENT",
+          "leftOffset": 18528,
+          "rightOffset": 16635,
+          "delta": -1893
+        },
+        {
+          "value": "KPROD_STEPPER",
+          "leftOffset": 18551,
+          "rightOffset": 16658,
+          "delta": -1893
+        },
+        {
+          "value": "LPROD_MAPCOMPONENT",
+          "leftOffset": 18567,
+          "rightOffset": 16674,
+          "delta": -1893
+        },
+        {
+          "value": "MPROD_HISTOGRAM",
+          "leftOffset": 18588,
+          "rightOffset": 16695,
+          "delta": -1893
+        },
+        {
+          "value": "NPROD_PIECHART",
+          "leftOffset": 18606,
+          "rightOffset": 16713,
+          "delta": -1893
+        },
+        {
+          "value": "OPROD_LINECHART",
+          "leftOffset": 18623,
+          "rightOffset": 16730,
+          "delta": -1893
+        },
+        {
+          "value": "PPROD_ICONBUTTON",
+          "leftOffset": 18641,
+          "rightOffset": 16748,
+          "delta": -1893
+        },
+        {
+          "value": "QPROD_MOREBUTTON",
+          "leftOffset": 18660,
+          "rightOffset": 16767,
+          "delta": -1893
+        },
+        {
+          "value": "RPROD_SCOREBAR",
+          "leftOffset": 18679,
+          "rightOffset": 16786,
+          "delta": -1893
+        },
+        {
+          "value": "SPROD_PROCESSBAR",
+          "leftOffset": 18696,
+          "rightOffset": 16803,
+          "delta": -1893
+        },
+        {
+          "value": "TPROD_DRAGBAR",
+          "leftOffset": 18715,
+          "rightOffset": 16822,
+          "delta": -1893
+        },
+        {
+          "value": "UPROD_SVGFRAME",
+          "leftOffset": 18731,
+          "rightOffset": 16838,
+          "delta": -1893
+        },
+        {
+          "value": "VPROD_LARGECARD3",
+          "leftOffset": 18748,
+          "rightOffset": 16855,
+          "delta": -1893
+        },
+        {
+          "value": "WPROD_LARGECARD4",
+          "leftOffset": 18767,
+          "rightOffset": 16874,
+          "delta": -1893
+        },
+        {
+          "value": "XPROD_TOASTLOADING",
+          "leftOffset": 18786,
+          "rightOffset": 16893,
+          "delta": -1893
+        },
+        {
+          "value": "YPROD_SIDENAVIGATBAR2",
+          "leftOffset": 18807,
+          "rightOffset": 16914,
+          "delta": -1893
+        },
+        {
+          "value": "ZPROD_PAGERCOMPONENT2",
+          "leftOffset": 18831,
+          "rightOffset": 16938,
+          "delta": -1893
+        },
+        {
+          "value": "_PROD_TOASTWARNPC",
+          "leftOffset": 18934,
+          "rightOffset": 17041,
+          "delta": -1893
+        },
+        {
+          "value": "aPROD_TOASTLOADINGPC",
+          "leftOffset": 18976,
+          "rightOffset": 17083,
+          "delta": -1893
+        },
+        {
+          "value": "bPROD_TOASTSINGLEBUTTONPC",
+          "leftOffset": 18999,
+          "rightOffset": 17106,
+          "delta": -1893
+        },
+        {
+          "value": "cPROD_TOASTDOUBLEBUTTONPC",
+          "leftOffset": 19027,
+          "rightOffset": 17134,
+          "delta": -1893
+        },
+        {
+          "value": "dPROD_TOASTTIPSPC",
+          "leftOffset": 19055,
+          "rightOffset": 17162,
+          "delta": -1893
+        },
+        {
+          "value": "ePROD_PLUSNAVIGATBAR",
+          "leftOffset": 19075,
+          "rightOffset": 17182,
+          "delta": -1893
+        },
+        {
+          "value": "fPROD_STEPPER2",
+          "leftOffset": 19098,
+          "rightOffset": 17205,
+          "delta": -1893
+        },
+        {
+          "value": "gSECTION",
+          "leftOffset": 19115,
+          "rightOffset": 17222,
+          "delta": -1893
+        },
+        {
+          "value": "hPROD_BREADCRUMB",
+          "leftOffset": 19126,
+          "rightOffset": 17233,
+          "delta": -1893
+        },
+        {
+          "value": "iPROD_BREADCRUMBITEM",
+          "leftOffset": 19145,
+          "rightOffset": 17252,
+          "delta": -1893
+        },
+        {
+          "value": "jPROD_IBUTTON",
+          "leftOffset": 19168,
+          "rightOffset": 17275,
+          "delta": -1893
+        },
+        {
+          "value": "kPROD_IPLACEHOLDER",
+          "leftOffset": 19184,
+          "rightOffset": 17291,
+          "delta": -1893
+        },
+        {
+          "value": "lPROD_IMASK",
+          "leftOffset": 19205,
+          "rightOffset": 17312,
+          "delta": -1893
+        },
+        {
+          "value": "mPROD_ISTATUSBAR",
+          "leftOffset": 19219,
+          "rightOffset": 17326,
+          "delta": -1893
+        },
+        {
+          "value": "nPROD_IINPUTBOX",
+          "leftOffset": 19238,
+          "rightOffset": 17345,
+          "delta": -1893
+        },
+        {
+          "value": "oPROD_IRADIOANDCHECKBUTTON",
+          "leftOffset": 19256,
+          "rightOffset": 17363,
+          "delta": -1893
+        },
+        {
+          "value": "pPROD_IRADIOBUTTON",
+          "leftOffset": 19285,
+          "rightOffset": 17392,
+          "delta": -1893
+        },
+        {
+          "value": "qPROD_ISTEPPER",
+          "leftOffset": 19306,
+          "rightOffset": 17413,
+          "delta": -1893
+        },
+        {
+          "value": "rPROD_VIEWPORTTEXT",
+          "leftOffset": 19323,
+          "rightOffset": 17430,
+          "delta": -1893
+        },
+        {
+          "value": "sPROD_RECTBOX",
+          "leftOffset": 19344,
+          "rightOffset": 17451,
+          "delta": -1893
+        },
+        {
+          "value": "tPROD_SELECTBOX",
+          "leftOffset": 19360,
+          "rightOffset": 17467,
+          "delta": -1893
+        },
+        {
+          "value": "uPROD_SELECTOPTION",
+          "leftOffset": 19378,
+          "rightOffset": 17485,
+          "delta": -1893
+        },
+        {
+          "value": "vPROD_SMARTTABLE",
+          "leftOffset": 19399,
+          "rightOffset": 17506,
+          "delta": -1893
+        },
+        {
+          "value": "wPROD_SMARTTABLECELL",
+          "leftOffset": 19418,
+          "rightOffset": 17525,
+          "delta": -1893
+        },
+        {
+          "value": "xPROD_BLOCK",
+          "leftOffset": 19441,
+          "rightOffset": 17548,
+          "delta": -1893
+        },
+        {
+          "value": "yPROD_BLOCKDOCUMENT",
+          "leftOffset": 19455,
+          "rightOffset": 17562,
+          "delta": -1893
+        },
+        {
+          "value": "zPROD_TOPBARPC",
+          "leftOffset": 19477,
+          "rightOffset": 17584,
+          "delta": -1893
+        },
+        {
+          "value": "H1",
+          "leftOffset": 20720,
+          "rightOffset": 18711,
+          "delta": -2009
+        },
+        {
+          "value": "ORDERED_LIST",
+          "leftOffset": 26571,
+          "rightOffset": 23867,
+          "delta": -2704
+        },
+        {
+          "value": "ENDING",
+          "leftOffset": 26634,
+          "rightOffset": 23930,
+          "delta": -2704
+        },
+        {
+          "value": "OUTLINE",
+          "leftOffset": 26664,
+          "rightOffset": 23960,
+          "delta": -2704
+        },
+        {
+          "value": "CAP_HEIGHT",
+          "leftOffset": 26710,
+          "rightOffset": 24006,
+          "delta": -2704
+        },
+        {
+          "value": "C2PC",
+          "leftOffset": 26751,
+          "rightOffset": 24047,
+          "delta": -2704
+        },
+        {
+          "value": "-OPBD",
+          "leftOffset": 27110,
+          "rightOffset": 24406,
+          "delta": -2704
+        },
+        {
+          "value": "0PKNA",
+          "leftOffset": 27134,
+          "rightOffset": 24430,
+          "delta": -2704
+        },
+        {
+          "value": "1LTRA",
+          "leftOffset": 27142,
+          "rightOffset": 24438,
+          "delta": -2704
+        },
+        {
+          "value": "2LTRM",
+          "leftOffset": 27150,
+          "rightOffset": 24446,
+          "delta": -2704
+        },
+        {
+          "value": "3RTLA",
+          "leftOffset": 27158,
+          "rightOffset": 24454,
+          "delta": -2704
+        },
+        {
+          "value": "4RTLM",
+          "leftOffset": 27166,
+          "rightOffset": 24462,
+          "delta": -2704
+        },
+        {
+          "value": "5ABRV",
+          "leftOffset": 27174,
+          "rightOffset": 24470,
+          "delta": -2704
+        },
+        {
+          "value": "6ABVM",
+          "leftOffset": 27182,
+          "rightOffset": 24478,
+          "delta": -2704
+        },
+        {
+          "value": "7ABVS",
+          "leftOffset": 27190,
+          "rightOffset": 24486,
+          "delta": -2704
+        },
+        {
+          "value": "8VALT",
+          "leftOffset": 27198,
+          "rightOffset": 24494,
+          "delta": -2704
+        },
+        {
+          "value": "9VHAL",
+          "leftOffset": 27206,
+          "rightOffset": 24502,
+          "delta": -2704
+        },
+        {
+          "value": "ACURS",
+          "leftOffset": 27270,
+          "rightOffset": 24566,
+          "delta": -2704
+        },
+        {
+          "value": "BDIST",
+          "leftOffset": 27278,
+          "rightOffset": 24574,
+          "delta": -2704
+        },
+        {
+          "value": "CEXPT",
+          "leftOffset": 27286,
+          "rightOffset": 24582,
+          "delta": -2704
+        },
+        {
+          "value": "DFALT",
+          "leftOffset": 27294,
+          "rightOffset": 24590,
+          "delta": -2704
+        },
+        {
+          "value": "EFINA",
+          "leftOffset": 27302,
+          "rightOffset": 24598,
+          "delta": -2704
+        },
+        {
+          "value": "FFIN2",
+          "leftOffset": 27310,
+          "rightOffset": 24606,
+          "delta": -2704
+        },
+        {
+          "value": "GFIN3",
+          "leftOffset": 27318,
+          "rightOffset": 24614,
+          "delta": -2704
+        },
+        {
+          "value": "HHALF",
+          "leftOffset": 27326,
+          "rightOffset": 24622,
+          "delta": -2704
+        },
+        {
+          "value": "IHALN",
+          "leftOffset": 27334,
+          "rightOffset": 24630,
+          "delta": -2704
+        },
+        {
+          "value": "JHKNA",
+          "leftOffset": 27342,
+          "rightOffset": 24638,
+          "delta": -2704
+        },
+        {
+          "value": "KHNGL",
+          "leftOffset": 27350,
+          "rightOffset": 24646,
+          "delta": -2704
+        },
+        {
+          "value": "LHOJO",
+          "leftOffset": 27358,
+          "rightOffset": 24654,
+          "delta": -2704
+        },
+        {
+          "value": "MINIT",
+          "leftOffset": 27366,
+          "rightOffset": 24662,
+          "delta": -2704
+        },
+        {
+          "value": "NISOL",
+          "leftOffset": 27374,
+          "rightOffset": 24670,
+          "delta": -2704
+        },
+        {
+          "value": "OJP78",
+          "leftOffset": 27382,
+          "rightOffset": 24678,
+          "delta": -2704
+        },
+        {
+          "value": "PJP83",
+          "leftOffset": 27390,
+          "rightOffset": 24686,
+          "delta": -2704
+        },
+        {
+          "value": "QJP90",
+          "leftOffset": 27398,
+          "rightOffset": 24694,
+          "delta": -2704
+        },
+        {
+          "value": "RJP04",
+          "leftOffset": 27406,
+          "rightOffset": 24702,
+          "delta": -2704
+        },
+        {
+          "value": "SLJMO",
+          "leftOffset": 27414,
+          "rightOffset": 24710,
+          "delta": -2704
+        },
+        {
+          "value": "TLOCL",
+          "leftOffset": 27422,
+          "rightOffset": 24718,
+          "delta": -2704
+        },
+        {
+          "value": "UMARK",
+          "leftOffset": 27430,
+          "rightOffset": 24726,
+          "delta": -2704
+        },
+        {
+          "value": "VMEDI",
+          "leftOffset": 27438,
+          "rightOffset": 24734,
+          "delta": -2704
+        },
+        {
+          "value": "WMED2",
+          "leftOffset": 27446,
+          "rightOffset": 24742,
+          "delta": -2704
+        },
+        {
+          "value": "XMKMK",
+          "leftOffset": 27454,
+          "rightOffset": 24750,
+          "delta": -2704
+        },
+        {
+          "value": "YNLCK",
+          "leftOffset": 27462,
+          "rightOffset": 24758,
+          "delta": -2704
+        },
+        {
+          "value": "ZNUKT",
+          "leftOffset": 27470,
+          "rightOffset": 24766,
+          "delta": -2704
+        },
+        {
+          "value": "_PSTS",
+          "leftOffset": 27510,
+          "rightOffset": 24806,
+          "delta": -2704
+        },
+        {
+          "value": "aRPHF",
+          "leftOffset": 27526,
+          "rightOffset": 24822,
+          "delta": -2704
+        },
+        {
+          "value": "bRUBY",
+          "leftOffset": 27534,
+          "rightOffset": 24830,
+          "delta": -2704
+        },
+        {
+          "value": "cSMPL",
+          "leftOffset": 27542,
+          "rightOffset": 24838,
+          "delta": -2704
+        },
+        {
+          "value": "dTJMO",
+          "leftOffset": 27550,
+          "rightOffset": 24846,
+          "delta": -2704
+        },
+        {
+          "value": "eTNAM",
+          "leftOffset": 27558,
+          "rightOffset": 24854,
+          "delta": -2704
+        },
+        {
+          "value": "fTRAD",
+          "leftOffset": 27566,
+          "rightOffset": 24862,
+          "delta": -2704
+        },
+        {
+          "value": "gVATU",
+          "leftOffset": 27574,
+          "rightOffset": 24870,
+          "delta": -2704
+        },
+        {
+          "value": "hVJMO",
+          "leftOffset": 27582,
+          "rightOffset": 24878,
+          "delta": -2704
+        },
+        {
+          "value": "iVKNA",
+          "leftOffset": 27590,
+          "rightOffset": 24886,
+          "delta": -2704
+        },
+        {
+          "value": "jVKRN",
+          "leftOffset": 27598,
+          "rightOffset": 24894,
+          "delta": -2704
+        },
+        {
+          "value": "kVRTR",
+          "leftOffset": 27606,
+          "rightOffset": 24902,
+          "delta": -2704
+        },
+        {
+          "value": "lVRT2",
+          "leftOffset": 27614,
+          "rightOffset": 24910,
+          "delta": -2704
+        },
+        {
+          "value": "mSS01",
+          "leftOffset": 27622,
+          "rightOffset": 24918,
+          "delta": -2704
+        },
+        {
+          "value": "nSS02",
+          "leftOffset": 27630,
+          "rightOffset": 24926,
+          "delta": -2704
+        },
+        {
+          "value": "oSS03",
+          "leftOffset": 27638,
+          "rightOffset": 24934,
+          "delta": -2704
+        },
+        {
+          "value": "pSS04",
+          "leftOffset": 27646,
+          "rightOffset": 24942,
+          "delta": -2704
+        },
+        {
+          "value": "qSS05",
+          "leftOffset": 27654,
+          "rightOffset": 24950,
+          "delta": -2704
+        },
+        {
+          "value": "rSS06",
+          "leftOffset": 27662,
+          "rightOffset": 24958,
+          "delta": -2704
+        },
+        {
+          "value": "sSS07",
+          "leftOffset": 27670,
+          "rightOffset": 24966,
+          "delta": -2704
+        },
+        {
+          "value": "tSS08",
+          "leftOffset": 27678,
+          "rightOffset": 24974,
+          "delta": -2704
+        },
+        {
+          "value": "uSS09",
+          "leftOffset": 27686,
+          "rightOffset": 24982,
+          "delta": -2704
+        },
+        {
+          "value": "vSS10",
+          "leftOffset": 27694,
+          "rightOffset": 24990,
+          "delta": -2704
+        },
+        {
+          "value": "wSS11",
+          "leftOffset": 27702,
+          "rightOffset": 24998,
+          "delta": -2704
+        },
+        {
+          "value": "xSS12",
+          "leftOffset": 27710,
+          "rightOffset": 25006,
+          "delta": -2704
+        },
+        {
+          "value": "ySS13",
+          "leftOffset": 27718,
+          "rightOffset": 25014,
+          "delta": -2704
+        },
+        {
+          "value": "zSS14",
+          "leftOffset": 27726,
+          "rightOffset": 25022,
+          "delta": -2704
+        },
+        {
+          "value": "STATE_GROUP",
+          "leftOffset": 28722,
+          "rightOffset": 26018,
+          "delta": -2704
+        },
+        {
+          "value": "TEXT",
+          "leftOffset": 28765,
+          "rightOffset": 26061,
+          "delta": -2704
+        },
+        {
+          "value": "TEXT_DATA",
+          "leftOffset": 28835,
+          "rightOffset": 26131,
+          "delta": -2704
+        },
+        {
+          "value": "Figma",
+          "leftOffset": 28920,
+          "rightOffset": 26216,
+          "delta": -2704
+        },
+        {
+          "value": "ImportDoc",
+          "leftOffset": 28984,
+          "rightOffset": 26280,
+          "delta": -2704
+        },
+        {
+          "value": "DESIGN",
+          "leftOffset": 29019,
+          "rightOffset": 26315,
+          "delta": -2704
+        }
+      ],
+      "blockSize": 64,
+      "leftBlockCount": 500,
+      "rightBlockCount": 457,
+      "commonBlockLcsLength": 1
+    }
+  ],
+  "confirmedFields": [
+    {
+      "field": "serialization",
+      "confidence": "confirmed",
+      "evidence": "Kiwi binary schemas decoded and PixsoMsg round-tripped exactly in 2 real file(s)."
+    },
+    {
+      "field": "nodeRecordBoundary",
+      "confidence": "confirmed",
+      "evidence": "191750/191750 PixsoNode encodings were uniquely located in sequential payload order."
+    },
+    {
+      "field": "node.name",
+      "confidence": "confirmed",
+      "evidence": "PixsoNode.name is a Kiwi schema field and decoded records re-encode byte-for-byte. Values are redacted from reports."
+    },
+    {
+      "field": "node.type",
+      "confidence": "confirmed",
+      "evidence": "PixsoNode.type resolves through the Kiwi NodeType enum and exact root-message round trip."
+    },
+    {
+      "field": "node.parentId",
+      "confidence": "confirmed",
+      "evidence": "PixsoNode.parentIndex.guid links decoded node GUIDs; no visual-tree semantics beyond this direct link are claimed."
+    },
+    {
+      "field": "rect.width/height",
+      "confidence": "confirmed",
+      "evidence": "PixsoNode.size is a schema field of Vector type; x/y components are retained as width/height."
+    }
+  ],
+  "inferredFields": [
+    {
+      "field": "layoutMode",
+      "confidence": "inferred",
+      "evidence": "PixsoNode.stackMode decodes to enum values such as HORIZONTAL, but controlled off/A/B samples are absent."
+    },
+    {
+      "field": "padding/gap/stroke",
+      "confidence": "inferred",
+      "evidence": "Schema and decoded records expose stackPadding*, stackSpacing, and strokePaints; three-value differential validation is absent."
+    },
+    {
+      "field": "geometry transform",
+      "confidence": "inferred",
+      "evidence": "PixsoNode.transform contains Matrix m02/m12 candidates, but their coordinate conversion is not filled without three known positions."
+    }
+  ],
+  "notFoundFields": [
+    {
+      "field": "rect.x/rect.y",
+      "confidence": "not-found",
+      "evidence": "No three controlled coordinate values were supplied, so transform-to-top-left conversion is intentionally unset."
+    },
+    {
+      "field": "confirmed design attribute",
+      "confidence": "not-found",
+      "evidence": "No attribute has off/A/B controlled files; decoded field names alone are insufficient for confirmation."
+    }
+  ],
+  "conclusion": {
+    "status": "STOP",
+    "actualSampleCount": 2,
+    "controlledDifferentialSampleCount": 0,
+    "reason": "Serialization and node records are confirmed, but fewer than three controlled geometry samples and no off/A/B attribute set are available.",
+    "parserSupportClaimed": false
+  }
+}

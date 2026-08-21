@@ -1,5 +1,5 @@
 {
-  "name": "Pixso Design System Migration Toolkit",
+  "name": "Pixso 设计系统迁移工具",
   "id": "pixso-design-system-migration-toolkit",
   "api": "1.0.0",
   "main": "dist/main.js",

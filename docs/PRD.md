@@ -18,7 +18,7 @@ Help migrate a Pixso private-deployment design system into Figma Desktop through
 ## MVP Scope
 
 1. Pixso plugin exports capability report for selected nodes.
-2. Pixso plugin exports selected-scope `migration-map.json`.
+2. Pixso plugin exports selection, selected-artboard, or current-page metadata in configurable root-node batches.
 3. Figma plugin imports `migration-map.json`, matches imported Sketch nodes, and restores safe layout properties.
 4. Figma plugin reports restored, partial, and failed nodes.
 5. Documentation explains what is implemented versus what must be verified in the user's Pixso deployment.
@@ -34,6 +34,7 @@ Help migrate a Pixso private-deployment design system into Figma Desktop through
 
 - A user can run the Pixso capability probe on selected design-system nodes.
 - A user can export a valid `migration-map.json`.
+- A user can split a multi-artboard export into numbered batches and cancel between batches.
 - A user can import Sketch into Figma Desktop and run repair on selected scope.
 - Core matching and layout planning logic is covered by unit tests.
 - Unknown Pixso API fields are marked as unavailable, not guessed.

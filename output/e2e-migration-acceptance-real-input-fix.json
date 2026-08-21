@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "result": "FIX",
+  "migrationValue": {
+    "value": "UNVERIFIED",
+    "scope": "REAL_01 only",
+    "note": "The real Pixso case was reachable, but the P0-B exporter did not complete; no migration-quality claim is made."
+  },
+  "realSample": {
+    "label": "REAL_01",
+    "source": "Pixso duplicate opened by the user",
+    "selectedSemanticCase": "Input component",
+    "selectedRootCount": 1,
+    "privacy": "No source file, export, image, business text, GUID, or absolute path is stored in this report."
+  },
+  "stages": {
+    "pixsoSource": {
+      "status": "started-but-export-timeout",
+      "pluginPath": "local packaged manifest",
+      "scope": "selection",
+      "observed": [
+        "Real duplicate opened successfully",
+        "Input 输入框 hierarchy was visible",
+        "A single 输入框（基础组件） child was selected",
+        "P0-B plugin UI launched",
+        "Export button entered disabled/running state"
+      ],
+      "result": "No capability or migration JSON was produced before the bounded wait; the operation remained running."
+    },
+    "sketchExport": { "status": "not-run" },
+    "freshFigmaImport": { "status": "not-run" },
+    "conservativeRepair": { "status": "not-run" },
+    "structuralRepair": { "status": "not-run" }
+  },
+  "metrics": {
+    "nodeCoverage": null,
+    "hierarchyCoverage": null,
+    "appearanceCoverage": null,
+    "autoLayoutCoverage": null,
+    "textCoverage": null,
+    "vectorCoverage": null,
+    "imageCoverage": null,
+    "componentInstanceCoverage": null,
+    "geometry": { "median": null, "p95": null, "max": null, "regressionRate": null },
+    "manualIntervention": { "automatic": null, "minor": null, "major": null, "unrecoverable": null }
+  },
+  "failures": [
+    {
+      "id": "REAL_01-EXPORT-TIMEOUT",
+      "stage": "pixso-source",
+      "severity": "P0",
+      "category": "exporter-execution",
+      "description": "P0-B export did not complete for a single real Input component selection."
+    }
+  ],
+  "topPreserved": [
+    "Real Design System duplicate remained read-only for this run",
+    "Input hierarchy and component-instance labels were observable",
+    "No real asset entered the repository"
+  ],
+  "topFailures": ["Exporter remains non-terminating on the real Input selection"],
+  "priorities": {
+    "p0": "Bound and diagnose the exporter path on a single real component before any Sketch/Figma stage.",
+    "p1": "Add a local-only timeout/error diagnostic without changing migration semantics.",
+    "p2": "Deferred until source export completes."
+  },
+  "privacy": {
+    "realAssetsCommitted": false,
+    "designFilesCommitted": false,
+    "absolutePathsIncluded": false,
+    "businessTextIncluded": false
+  }
+}

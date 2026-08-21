@@ -308,26 +308,67 @@ function toMigrationNode(
   };
 }
 
-function flatten(nodes: RawNode[], parentPath: string[] = [], parentMigrationId?: string): MigrationNode[] {
+const MAX_TRAVERSAL_NODES = 20_000;
+
+interface TraversalState {
+  count: number;
+  ids: Set<string>;
+  objects: WeakSet<object>;
+}
+
+function createTraversalState(): TraversalState {
+  return { count: 0, ids: new Set<string>(), objects: new WeakSet<object>() };
+}
+
+function visitNode(node: RawNode, state: TraversalState): boolean {
+  if (typeof node.id === "string") {
+    if (state.ids.has(node.id)) return false;
+    state.ids.add(node.id);
+  } else if (node && typeof node === "object") {
+    if (state.objects.has(node)) return false;
+    state.objects.add(node);
+  }
+  state.count += 1;
+  if (state.count > MAX_TRAVERSAL_NODES) {
+    throw new Error(`节点遍历超过安全上限 ${MAX_TRAVERSAL_NODES}，已停止导出以避免 Pixso 插件卡死。`);
+  }
+  return true;
+}
+
+function flatten(
+  nodes: RawNode[],
+  parentPath: string[] = [],
+  parentMigrationId?: string,
+  state: TraversalState = createTraversalState()
+): MigrationNode[] {
   return nodes.flatMap((node, index) => {
+    if (!visitNode(node, state)) return [];
     const path = [...parentPath, `${String(node.name ?? "Unnamed")}[${index}]`];
     const mapped = toMigrationNode(node, path, parentMigrationId);
-    const children = Array.isArray(node.children) ? flatten(node.children, path, mapped.migrationId) : [];
+    const children = Array.isArray(node.children) ? flatten(node.children, path, mapped.migrationId, state) : [];
     return [mapped, ...children];
   });
 }
 
 function flattenRoots(roots: RootRef[]): MigrationNode[] {
+  const state = createTraversalState();
   return roots.flatMap((root) => {
+    if (!visitNode(root.node, state)) return [];
     const path = rootPath(root);
     const mapped = toMigrationNode(root.node, path, undefined, root.originalIndex, root.indexSource);
-    const children = Array.isArray(root.node.children) ? flatten(root.node.children, path, mapped.migrationId) : [];
+    const children = Array.isArray(root.node.children) ? flatten(root.node.children, path, mapped.migrationId, state) : [];
     return [mapped, ...children];
   });
 }
 
 function flattenRawNodes(nodes: RawNode[]): RawNode[] {
-  return nodes.flatMap((node) => [node, ...(Array.isArray(node.children) ? flattenRawNodes(node.children) : [])]);
+  const state = createTraversalState();
+  const visit = (items: RawNode[]): RawNode[] =>
+    items.flatMap((node) => {
+      if (!visitNode(node, state)) return [];
+      return [node, ...(Array.isArray(node.children) ? visit(node.children) : [])];
+    });
+  return visit(nodes);
 }
 
 function inspectField(node: RawNode, field: string): { available: boolean; value?: unknown } {
